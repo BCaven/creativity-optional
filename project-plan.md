@@ -1,3 +1,7 @@
+    NOTE: This is the original pitch for the project
+    
+    Look at the README for an updated vision of the project
+
 # pitch
 
 room management: a light/appliance library that doesn't suck
