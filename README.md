@@ -24,3 +24,19 @@ This project is a script that generates a stream of images based on song selecti
 - [ ] uv mapping for outputs
 - [ ] real-time light reactions
 - [ ] plug-and-play connection to third party apis
+
+# Contributing to this project:
+
+Both `main` and `develop` branches are protected. 
+To contribute first find or make an issue in the [issues](https://github.com/BCaven/creativity-optional/issues) tab.
+Then, branch off of `develop` for the issue/feature you are working on. Branch names should be the same as the name of the issue.
+
+Once your contribution is complete, make a [pull request](https://github.com/BCaven/creativity-optional/pulls) to the `develop` branch and request someone to review your pull request.
+
+If your change gets accepted to the `develop` branch, a pull request will be opened to merge it into main.
+
+
+# TODO List:
+
+- [ ] organize Directory
+- [ ] set up rules for development on github
