@@ -38,8 +38,8 @@ If your change gets accepted to the `develop` branch, a pull request will be ope
 
 # TODO List:
 
-- [ x ] organize Directory
-- [ x ] set up rules for development on github
+- [x] organize Directory
+- [x] set up rules for development on github
 
 # Development:
 
