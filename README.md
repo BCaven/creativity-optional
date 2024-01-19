@@ -38,5 +38,29 @@ If your change gets accepted to the `develop` branch, a pull request will be ope
 
 # TODO List:
 
-- [ ] organize Directory
-- [ ] set up rules for development on github
+- [ x ] organize Directory
+- [ x ] set up rules for development on github
+
+# Development:
+
+## Directory organization:
+
+`src/` contains source files for the application
+`testing/` contains miscellaneous scripts used to test specific sub features
+
+## venv activation
+
+[in-depth tutorial](https://docs.python.org/3/tutorial/venv.html)
+
+TLDR:
+For windows:
+`.venv\Scripts\activate`
+
+For linux/macos:
+`source .venv/bin/activate`
+
+To run scripts, first activate the virtual environment then run the script.
+
+Python scripts were designed to be run from the root directory of the project.
+
+For example, `python3 testing/sound_input.py`
