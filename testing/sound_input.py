@@ -3,6 +3,9 @@
 Continuously read input stream.
 
 Original code from here: https://stackoverflow.com/questions/48653745/continuesly-streaming-audio-signal-real-time-infinitely-python
+
+Someone who did a baby version of this project:
+https://blog.francoismaillet.com/epic-celebration
 """
 
 import pyaudio
