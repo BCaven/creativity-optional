@@ -1,4 +1,3 @@
-from tkinter import N
 import numpy as np
 import pyaudio
 import time
