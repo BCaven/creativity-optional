@@ -19,9 +19,10 @@ RATE = 44100
 
 p = pyaudio.PyAudio()
 stream = p.open(format=pyaudio.paInt16,
-                channels=1,
+                channels=2,
                 rate=RATE,
                 input=True,
+                input_device_index=2,
                 # default audio out
                 frames_per_buffer=CHUNK)
 
