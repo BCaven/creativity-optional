@@ -13,6 +13,7 @@ NOTE: https://stackoverflow.com/questions/7088672/pyaudio-working-but-spits-out-
 import pyaudio
 import numpy as np
 import librosa
+import dynamic2
 
 CHUNK = 2**11
 RATE = 44100
@@ -33,6 +34,7 @@ for i in range(int(20*44100/1024)):
     bars = "#" * int(50 * peak / 2 ** 16)
     max_val = np.max(data)
     mbars = "-" * int((50 * max_val / 2 ** 16) - (50 * peak / 2 ** 16))
+    dynamic2.imageLoop(peak)
     print("%04d %05d %s" % (i, peak, bars + mbars))
     # tempo, beat_frames = librosa.beat.beat_track(y=data, sr=RATE)
     # print(f"tempo: {tempo}\nbeat_frames: {beat_frames}")
