@@ -2,3 +2,4 @@ pyaudio
 numpy
 matplotlib
 librosa
+spotipy
