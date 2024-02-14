@@ -2,3 +2,5 @@ pyaudio
 numpy
 matplotlib
 librosa
+Flask
+requests

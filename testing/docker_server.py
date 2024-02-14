@@ -13,12 +13,19 @@ the app should be avaliable at ip/
 might want to open a second port for the audio if we are *slow* because of the constant audio requests
 
 
-TODO: find good request handler
-    For now just going to use the built in python https server
+Server: Flask
+
+TODO: use html templates
 """
+from flask import Flask
 
-import http.server
-import socketserver
+app = Flask(__name__)
+
+@app.route("/")
+def main_page():
+    return "<p>Hello world</p>"
 
 
-
+@app.route("/audio_in")
+def audio_in_post():
+    return 
