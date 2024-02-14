@@ -1,7 +1,4 @@
 #just a file to test pytest
-from unittest import TestCase
-
-class TryTesting(TestCase):
-    def alwaysTrue(self):
-        self.assertLess(1, 7)
-        self.assertTrue(True)
+#test funcs must always start with test_
+def test_always_true():
+    assert 3 == 3
