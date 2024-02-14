@@ -1,0 +1,7 @@
+gcc
+libc-dev
+libasound-dev
+portaudio19-dev
+libportaudio2
+libportaudiocpp0
+libjack-jackd2-dev

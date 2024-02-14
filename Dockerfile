@@ -30,6 +30,12 @@ RUN adduser \
     --uid "${UID}" \
     appuser
 
+# Get dependencies from apt
+RUN --mount=type=cache,target=/root/.cache/apt \
+    --mount=type=bind,source=requirements-apt.txt,target=requirements-apt.txt \
+    apt-get update && \
+    apt-get install -y $(cat requirements-apt.txt)
+
 # Download dependencies as a separate step to take advantage of Docker's caching.
 # Leverage a cache mount to /root/.cache/pip to speed up subsequent builds.
 # Leverage a bind mount to requirements.txt to avoid having to copy them into
@@ -48,4 +54,4 @@ COPY . .
 EXPOSE 8000
 
 # Run the application.
-CMD python3 testing/librosa_demo.py
+CMD flask --app testing/docker_server run -p 8000 -h 0.0.0.0
