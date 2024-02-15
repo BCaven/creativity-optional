@@ -38,10 +38,10 @@ def audio_in():
     if request.method == 'POST':
         data = request.form
         if "peak" in data:
+            ravg = float(data['avg'])
             rpeak = float(data['peak'])
-            rmax = float(data['max_val'])
-            bars = "#" * int(100 * rpeak / 2 ** 16)
-            mbars = "-" * int((100 * rmax / 2 ** 16) - (50 * rpeak / 2 ** 16))
+            bars = "#" * int(50 * ravg)
+            mbars = "-" * int((50 * rpeak) - (50 * ravg))
             AUDIO_STR = bars + mbars
         return data
     else:
