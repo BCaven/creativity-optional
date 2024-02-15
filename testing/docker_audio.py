@@ -12,7 +12,7 @@ from time import time_ns
 import sys
 
 # Docker globals
-DOCKER_IP="http://0.0.0.0:8000/audio_in"
+DOCKER_IP="http://192.168.86.34:8000/audio_in"
 
 # response code that signals time to shutdown
 QUIT=400
