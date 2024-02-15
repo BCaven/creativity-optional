@@ -11,6 +11,8 @@ import numpy as np
 from time import time_ns
 import sys
 
+IS_MAC = False
+
 # Docker globals
 DOCKER_IP="http://192.168.86.34:8000/audio_in"
 
@@ -41,12 +43,22 @@ def main():
     - The timestamp of the packet
     """
     p = pyaudio.PyAudio()
-    stream = p.open(format=pyaudio.paInt16,
-                    channels=2,
-                    rate=RATE,
-                    input=True,
-                    # default audio out
-                    frames_per_buffer=CHUNK)
+    stream = None
+    if IS_MAC:
+        stream = p.open(format=pyaudio.paInt16,
+                        channels=1,
+                        rate=RATE,
+                        input=True,
+                        # default audio out
+                        frames_per_buffer=CHUNK)
+    else:
+        stream = p.open(format=pyaudio.paInt16,
+                        channels=2,
+                        rate=RATE,
+                        input=True,
+                        # default audio out
+                        frames_per_buffer=CHUNK)
+    assert stream, "you done messed up"
     while True:
         # TODO: make it so the docker server can kill this application
         try:
