@@ -8,24 +8,41 @@ NOTE: technically, the "client" "serves" raw audio to this application
 Technical:
 audio is posted to ip/audio_in
 video should be available at ip/video/id
-the app should be avaliable at ip/
+
+A Vue site should be the only thing that has direct communication with this application
+it should not be available outside of the docker container (except MAYBE the video stream)
+although for now it is available because the Vue site doesnt exist and I needed to test
+the audio input
 
 might want to open a second port for the audio if we are *slow* because of the constant audio requests
 
 
 Server: Flask
 
-TODO: use html templates
+TODO: make api calls for Vue front end 
 """
 from flask import Flask
+from flask import request
 
 app = Flask(__name__)
-
+AUDIO_STR = ""
 @app.route("/")
 def main_page():
     return "<p>Hello world</p>"
 
 
-@app.route("/audio_in")
-def audio_in_post():
-    return 
+@app.route("/audio_in", methods=['GET', 'POST'])
+def audio_in():
+    # TODO: change this later, it is just for testing
+    global AUDIO_STR
+    if request.method == 'POST':
+        data = request.form
+        if "peak" in data:
+            rpeak = float(data['peak'])
+            rmax = float(data['max_val'])
+            bars = "#" * int(100 * rpeak / 2 ** 16)
+            mbars = "-" * int((100 * rmax / 2 ** 16) - (50 * rpeak / 2 ** 16))
+            AUDIO_STR = bars + mbars
+        return data
+    else:
+        return f"<p>audio: {AUDIO_STR}</p>"

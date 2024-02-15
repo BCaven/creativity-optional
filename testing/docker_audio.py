@@ -12,7 +12,7 @@ from time import time_ns
 import sys
 
 # Docker globals
-DOCKER_IP="0.0.0.0:8000/audio_in"
+DOCKER_IP="http://0.0.0.0:8000/audio_in"
 
 # response code that signals time to shutdown
 QUIT=400
@@ -45,7 +45,6 @@ def main():
                     channels=2,
                     rate=RATE,
                     input=True,
-                    input_device_index=2,
                     # default audio out
                     frames_per_buffer=CHUNK)
     while True:
@@ -53,17 +52,19 @@ def main():
         try:
             data = np.frombuffer(stream.read(CHUNK), dtype=np.int16)
             # TODO: send data to docker
+            peak = np.average(np.abs(data)) * 2
+            max_val = np.max(data)
             payload = {
-                "data": data,
+                "peak": peak,
+                "max_val": max_val,
                 "timestamp": time_ns()
             }
-            response = requests.post(DOCKER_IP, data=payload)
-            if (response.status_code == QUIT):
-                stream.stop_stream()
-                stream.close()
-                p.terminate()
-                sys.exit(0)
-
+            response = requests.post(DOCKER_IP, data=payload).json()
+            rpeak = float(response['peak'])
+            rmax = float(response['max_val'])
+            bars = "#" * int(100 * rpeak / 2 ** 16)
+            mbars = "-" * int((100 * rmax / 2 ** 16) - (50 * rpeak / 2 ** 16))
+            print("%05d %s" % (peak, bars + mbars))
             
             #peak = np.average(np.abs(data)) * 2
             #max_val = np.max(data)            
@@ -72,7 +73,7 @@ def main():
             #print("%05d %s" % (peak, bars + mbars))
             # tempo, beat_frames = librosa.beat.beat_track(y=data, sr=RATE)
             # print(f"tempo: {tempo}\nbeat_frames: {beat_frames}")
-        except KeyboardInterrupt:
+        except Exception:
             stream.stop_stream()
             stream.close()
             p.terminate()
