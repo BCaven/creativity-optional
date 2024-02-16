@@ -23,6 +23,7 @@ TODO: make api calls for Vue front end
 """
 from flask import Flask
 from flask import request
+from time import time_ns
 
 app = Flask(__name__)
 AUDIO_STR = ""
@@ -37,12 +38,14 @@ def audio_in():
     global AUDIO_STR
     if request.method == 'POST':
         data = request.form
+        receive_time = time_ns()
         if "peak" in data:
             ravg = float(data['avg'])
             rpeak = float(data['peak'])
             bars = "#" * int(50 * ravg)
             mbars = "-" * int((50 * rpeak) - (50 * ravg))
             AUDIO_STR = bars + mbars
+            return bars + mbars
         return data
     else:
         return f"<p>audio: {AUDIO_STR}</p>"
