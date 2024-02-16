@@ -45,7 +45,8 @@ def audio_in():
             bars = "#" * int(50 * ravg)
             mbars = "-" * int((50 * rpeak) - (50 * ravg))
             AUDIO_STR = bars + mbars
+
             return bars + mbars
         return data
     else:
-        return f"<p>audio: {AUDIO_STR}</p>"
+        return AUDIO_STR

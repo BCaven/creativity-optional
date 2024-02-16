@@ -4,6 +4,7 @@ import sys
 import requests
 from time import time_ns, time
 
+
 DOCKER_IP="http://192.168.86.34:8000/audio_in"
 
 RECORD = True
@@ -17,7 +18,7 @@ print("\n".join(f"{i.id} {i.name}" for i in mics))
 
 default_mic = sc.default_microphone()
 default_speaker = sc.default_speaker()
-chosen_mic = sc.get_microphone("alsa_output.usb-Corsair_CORSAIR_VIRTUOSO_XT_Wireless_Gaming_Receiver_16cad14300030215-00.pro-output-0.monitor", include_loopback=True)
+chosen_mic = sc.get_microphone("alsa_output.pci-0000_04_00.6.analog-stereo.monitor", include_loopback=True)
 
 print(f"defaults:\nmic: {default_mic}\nspeaker: {default_speaker}")
 print(f"chosen mic: {chosen_mic}")
@@ -63,6 +64,7 @@ with chosen_mic.recorder(samplerate=48000, blocksize=512) as mic:
             #ravg = float(response['avg'])
             #bars = "#" * int(ravg * 50)
             #max_bars = "-" * int((50 * rpeak) - (50 * ravg))
+
             print(f"latency: {mic.latency:4.3f} {response}")
         except KeyboardInterrupt:
             break
