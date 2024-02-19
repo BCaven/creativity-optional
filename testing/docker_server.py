@@ -23,6 +23,7 @@ TODO: make api calls for Vue front end
 """
 from flask import Flask
 from flask import request
+from flask import jsonify
 from time import time_ns
 
 app = Flask(__name__)
@@ -49,4 +50,7 @@ def audio_in():
             return bars + mbars
         return data
     else:
-        return AUDIO_STR
+        response = jsonify({"bars": AUDIO_STR})
+        # TODO: the actual CORS policy
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        return response

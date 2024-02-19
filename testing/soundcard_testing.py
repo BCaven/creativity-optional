@@ -18,6 +18,8 @@ print("\n".join(f"{i.id} {i.name}" for i in mics))
 
 default_mic = sc.default_microphone()
 default_speaker = sc.default_speaker()
+# alsa_output.usb-Corsair_CORSAIR_VIRTUOSO_XT_Wireless_Gaming_Receiver_16cad14300030215-00.pro-output-0.monitor
+# alsa_output.pci-0000_04_00.6.analog-stereo.monitor
 chosen_mic = sc.get_microphone("alsa_output.pci-0000_04_00.6.analog-stereo.monitor", include_loopback=True)
 
 print(f"defaults:\nmic: {default_mic}\nspeaker: {default_speaker}")
