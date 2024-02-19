@@ -44,7 +44,6 @@ onBeforeUnmount(() => {
 
 <template>
   <main>
-    <p>Hello World</p>
     <p> Current Audio: {{ sound_bar }}</p>
   </main>
 </template>

@@ -6,3 +6,4 @@ Flask
 requests
 spotipy
 zeroconf
+opencv-python
