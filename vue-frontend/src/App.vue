@@ -61,7 +61,8 @@ onBeforeUnmount(() => {
   </main>
 </template>
 
-<style scoped>
+<style lang="scss">
+@import "~@/assets/scss/vendors/bootstrap-vue/index";
 header {
   line-height: 1.5;
 }
