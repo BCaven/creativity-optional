@@ -7,7 +7,7 @@ import { onMounted, onBeforeUnmount, ref } from "vue";
 // and never have to worry about it again
 // for testing, I am running this outside of the docker container
 // look into service workers as a way to automate the process of receiving data from the server
-const server_route = "192.168.86.34:8000";
+const server_route = "0.0.0.0:8000";
 let sound_bar = ref("");
 let sound_options = ref([]);
 let selected_input = ref("");
@@ -20,7 +20,7 @@ async function getSoundOptions() {
   let r = await response.json();
   // update the list of mics and selected mic from the server
   sound_options.value = r['mics'];
-  selected_input.value = r['selected'];
+  selected_input.value = r['source'];
 }
 
 async function updateSoundData() {
@@ -58,6 +58,10 @@ onBeforeUnmount(() => {
     <v-btn @click="getSoundOptions">Get Sound Options</v-btn>
     <p>Audio Device: {{ selected_input }}</p>
     <p> Current Audio: {{ sound_bar }}</p>
+    <v-combobox
+      label="audio input"
+      :items="sound_options"
+      ></v-combobox>
   </main>
 </template>
 
