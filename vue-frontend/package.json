@@ -2,28 +2,17 @@
   "name": "creativity-optional-vue-frontend",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "build": "vite build",
     "dev": "vite",
+    "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
-    "@babel/polyfill": "^7.11.5",
-    "bootstrap": "^4.5.2",
-    "bootstrap-vue": "^2.17.3",
-    "mutationobserver-shim": "^0.3.7",
-    "popper.js": "^1.16.1",
-    "portal-vue": "^2.1.7",
-    "vue": "^3.4.15",
-    "@vue/compat": "^3.1.0"
+    "vue": "^3.4.15"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.3",
-    "sass": "^1.26.11",
-    "sass-loader": "^10.0.2",
-    "vite": "^5.0.11",
-    "vue-cli-plugin-bootstrap-vue": "~0.8.2",
-    "@vue/compiler-sfc": "^3.1.0"
-  },
-  "type": "module"
+    "vite": "^5.0.11"
+  }
 }
