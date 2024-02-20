@@ -55,7 +55,7 @@ onBeforeUnmount(() => {
 
 <template>
   <main>
-    <button @click="getSoundOptions">Get Sound Options</button>
+    <v-btn @click="getSoundOptions">Get Sound Options</v-btn>
     <p>Audio Device: {{ selected_input }}</p>
     <p> Current Audio: {{ sound_bar }}</p>
   </main>
