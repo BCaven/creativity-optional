@@ -9,10 +9,21 @@ import { onMounted, onBeforeUnmount, ref } from "vue";
 // look into service workers as a way to automate the process of receiving data from the server
 const server_route = "192.168.86.34:8000";
 let sound_bar = ref("");
+let sound_options = ref([]);
+let selected_input = ref("");
 const timer = ref();
 
+async function getSoundOptions() {
+  // get all input options from local controller
+  console.log("getting sound options from server");
+  const response = await fetch("http://" + server_route + "/audio_sources");
+  let r = await response.json();
+  // update the list of mics and selected mic from the server
+  sound_options.value = r['mics'];
+  selected_input.value = r['selected'];
+}
 
-async function update_sound_data() {
+async function updateSoundData() {
   // get the new sound data
   // the sound "bar" is just for testing visualization
   const response = await fetch("http://" + server_route + "/audio_in");
@@ -24,7 +35,7 @@ async function update_sound_data() {
 
 function countDownFunc () {
   //console.log("updating sound data");
-  update_sound_data();
+  updateSoundData();
 }
 
 // Instantiate
@@ -32,7 +43,7 @@ onMounted(() => {
   // could probably make this refresh faster given a better computer - I am testing this on my garbage laptop
   timer.value = setInterval(() => {
     countDownFunc();
-  }, 100);
+  }, 100); // 10 times every second
 });
 
 // Clean up
@@ -44,6 +55,8 @@ onBeforeUnmount(() => {
 
 <template>
   <main>
+    <button @click="getSoundOptions">Get Sound Options</button>
+    <p>Audio Device: {{ selected_input }}</p>
     <p> Current Audio: {{ sound_bar }}</p>
   </main>
 </template>
