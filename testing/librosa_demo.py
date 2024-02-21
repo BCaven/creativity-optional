@@ -29,8 +29,6 @@ stream = p.open(format=pyaudio.paInt16,
                 channels=2,
                 rate=RATE,
                 input=True,
-                input_device_index=2,
-                # default audio out
                 frames_per_buffer=CHUNK)
 
 
@@ -39,7 +37,7 @@ while True:
     try:
         data = np.frombuffer(stream.read(CHUNK), dtype=np.int16)
         peak = np.average(np.abs(data)) * 2
-        bars = "#" * int(50 * peak / 2 ** 16)
+        bars = "#" * int(100 * peak / 2 ** 16)
         max_val = np.max(data)
         mbars = "-" * int((50 * max_val / 2 ** 16) - (50 * peak / 2 ** 16))
         dynamic2.imageLoop(peak)

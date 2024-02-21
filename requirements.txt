@@ -1,6 +1,9 @@
-pyaudio
+soundcard
 numpy
 matplotlib
 librosa
+Flask
+requests
 spotipy
+zeroconf
 opencv-python
