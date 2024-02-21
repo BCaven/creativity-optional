@@ -1,6 +1,8 @@
 import soundcard as sc
 import numpy as np
 import sys
+from websockets.sync.client import connect
+# will likely get rid of the `requests` library
 import requests
 
 # BUG: fuzzy search grabs loopback devices when given the name of the actual device (non-loopback)

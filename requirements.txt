@@ -3,7 +3,8 @@ numpy
 matplotlib
 librosa
 Flask
-requests
 spotipy
 zeroconf
 opencv-python
+websockets
+requests
