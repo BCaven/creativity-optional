@@ -9,6 +9,7 @@ import { onMounted, onBeforeUnmount, ref } from "vue";
 // look into service workers as a way to automate the process of receiving data from the server
 const server_route = "0.0.0.0:8000";
 let sound_bar = ref("");
+let pulse_bar = ref("");
 let sound_options = ref([]);
 let selected_input = ref("");
 const timer = ref();
@@ -29,8 +30,11 @@ async function updateSoundData() {
   const response = await fetch("http://" + server_route + "/audio_in");
   //console.log(response.json());
   let r = await response.json();
+  console.log(r);
   sound_bar.value = r.bars;
   console.log(sound_bar.value);
+  pulse_bar.value = r.librosa_data.pulse_bar;
+  console.log(pulse_bar.value);
 }
 
 function countDownFunc () {
@@ -58,6 +62,7 @@ onBeforeUnmount(() => {
     <v-btn @click="getSoundOptions">Get Sound Options</v-btn>
     <p>Audio Device: {{ selected_input }}</p>
     <p> Current Audio: {{ sound_bar }}</p>
+    <p> Beat Box Corner: {{ pulse_bar }}</p>
     <v-combobox
       label="audio input"
       :items="sound_options"

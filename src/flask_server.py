@@ -28,11 +28,19 @@ from flask import request
 from flask import jsonify
 from time import time_ns
 
+#we need to set NUMDA_CACHE_DIR before we import librosa
+import os
+os.environ[ 'NUMBA_CACHE_DIR' ] = '/tmp/'
+from librosa_analysis import getData as getLibrosaData
+
 app = Flask(__name__)
 AUDIO_STR = ""
 AUDIO_SOURCE = ""
 AUDIO_CHUNK = []
 ALL_AUDIO = {}
+blockrate = 512
+samplerate = 48000
+librosa_data = {}
 @app.route("/")
 def main_page():
     return "<p>Hello world</p>"
@@ -44,12 +52,18 @@ def audio_source():
     """
     global ALL_AUDIO
     global AUDIO_SOURCE
+    global samplerate
+    global blockrate
     if request.method == "POST":
         data = request.form
         if "mics" in data:
             ALL_AUDIO = data["mics"]
         if "source" in data:
             AUDIO_SOURCE = data["source"]
+        if "samplerate" in data:
+            samplerate = samplerate
+        if "blockrate" in data:
+            blockrate = blockrate
         return AUDIO_SOURCE
     return AUDIO_SOURCE
 
@@ -65,6 +79,7 @@ def audio_in():
     global AUDIO_STR
     global AUDIO_SOURCE
     global AUDIO_CHUNK
+    global librosa_data
     if request.method == 'POST':
         data = request.form
         AUDIO_CHUNK = data['data']
@@ -73,6 +88,10 @@ def audio_in():
         bars = "#" * int(50 * ravg)
         mbars = "-" * int((50 * rpeak) - (50 * ravg))
         AUDIO_STR = bars + mbars
+
+        #get librosa data
+        if samplerate:
+            librosa_data = getLibrosaData(AUDIO_CHUNK, samplerate)
 
         response = {"bars": AUDIO_STR}
         if "source" in data:
@@ -83,7 +102,7 @@ def audio_in():
         #response.headers.add("Access-Control-Allow-Origin", "*")
         return response
     else:
-        response = jsonify({"bars": AUDIO_STR, "source": AUDIO_SOURCE})
+        response = jsonify({"bars": AUDIO_STR, "source": AUDIO_SOURCE, "librosa_data": librosa_data})
         # TODO: the actual CORS policy
         response.headers.add("Access-Control-Allow-Origin", "*")
         return response

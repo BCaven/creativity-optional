@@ -16,6 +16,19 @@ services:
     ports:
       - 8000:8000
 
+#Docker magic to make librosa work. Thanks to https://stackoverflow.com/questions/56995232/runtimeerror-cannot-cache-function-jaccard-no-locator-available-for-file
+# spec:
+#   template:
+#     spec:
+#       priorityClassName: <priority class>
+#       containers:
+#         - name: playaround
+#           image: <image_path>
+#           imagePullPolicy: "IfNotPresent"
+#           env:
+#             - name: NUMBA_CACHE_DIR
+#               value: "/misc/numba_cache"
+
 
 # The commented out section below is an example of how to define a PostgreSQL
 # database that your application can use. `depends_on` tells Docker Compose to

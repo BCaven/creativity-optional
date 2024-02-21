@@ -14,13 +14,15 @@ samplerate = 48000
 mics = sc.all_microphones(include_loopback=LOOPBACK)
 new_mic = sc.default_microphone().name
 
-audio_devices = {
+initial_request = {
     "mics": [m.name for m in mics],
-    "source": new_mic
+    "source": new_mic,
+    "samplerate": samplerate,
+    "blocksize": blocksize
 }
 # send the list
 # for now we do not care about the response
-_ = requests.post(DOCKER_IP + "audio_source", data=audio_devices)
+_ = requests.post(DOCKER_IP + "audio_source", data=initial_request)
 
 while True:
     try:
@@ -61,7 +63,7 @@ while True:
                 #mbars = "-" * int((50 * peak) - (50 * avg))
                 #print("local audio: " + bars + mbars)
                 # latency only works on linux
-                print(f"latency: {mic.latency:4.3f} mic: {current_name[:6]} {response['bars']}")
+                # print(f"latency: {mic.latency:4.3f} mic: {current_name[:6]} {response['bars']}")
         
     except KeyboardInterrupt:
         print("exiting...")
