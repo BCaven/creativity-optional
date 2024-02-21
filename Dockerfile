@@ -60,5 +60,5 @@ COPY . .
 EXPOSE 8000
 
 # Run the application.
-CMD flask --app testing/docker_server run -p 8000 -h 0.0.0.0 --debug
+CMD flask --app src/flask_server run -p 8000 -h 0.0.0.0 --debug
     
