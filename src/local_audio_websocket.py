@@ -6,70 +6,77 @@ import asyncio
 
 # TODO: wss
 # TODO: multicast discovery of server
-DOCKER_WEB_SOCKET = "ws://0.0.0.0:800/"
-LOOPBACK = False
+DOCKER_WEB_SOCKET = "ws://0.0.0.0:8000/"
+loopback = False
 
 blocksize = 1024
 samplerate = 48000
 
 # TODO: search for mic by id instead of name
 # still want the user to pick from human readable names tho
-mics = sc.all_microphones(include_loopback=LOOPBACK)
-new_mic = sc.default_microphone().name
+mics = sc.all_microphones(include_loopback=loopback)
+current_mic = sc.default_microphone()
+new_mic = current_mic.id
 
 
-async def send_audio():
+async def get_audio(mic):
     """
-    Continuously send audio data to the server via websocket.
+    Get audio chunk
 
-    Need to restart the recorder with a different mic if a new mic is selected.
-    TODO: restart if settings change
-    TODO: search based on id instead of name
+    TODO: make sure this actually works lol
     """
-    async with connect(DOCKER_WEB_SOCKET) as websocket:
-        while True:
-            # TODO: send list of microphones + current source + settings to server
-            try:
-                chosen_mic = sc.get_microphone(new_mic, include_loopback=LOOPBACK)
-                new_mic = chosen_mic.name
-                with chosen_mic.recorder(samplerate=samplerate, blocksize=blocksize) as mic:
-                    current_name = chosen_mic.name
-                    print(f"starting with: {current_name}")
-                    print(f"new mic name: {new_mic}")
-                    while current_name == new_mic:
-                        # the actual number of frames in each chunk is the block size
-                        # higher blocksize = easier on the system
-                        # higher blocksizes inherently have latency because they have to 
-                        # record the data before sending it
-                        # but smaller block sizes eventually have infinite latency because
-                        # the system cannot process the audio fast enough
-                        # TODO: write script to auto adjust the blocksize
-                        # TODO: section in Vue "options" for the user to change the blocksize
-                        data = np.abs(mic.record(numframes=None))
-                        avg = np.average(np.abs(data))
-                        peak = np.max(np.abs(data))
+    return mic.record(numframes=None)
 
-                        # TODO: experiment with sending raw data
-                        # if you do, just add a new key called "data" with the raw np array
-                        payload = {
-                            "avg": avg,
-                            "peak": peak,
-                            "data": data,
-                            "source": current_name
-                        }
-                        await websocket.send(payload)
-                        
-                
-            except KeyboardInterrupt:
-                print("exiting...")
-                sys.exit(0)
+async def producer_handler(websocket):
+    """
+    Send audio chunks
 
-async def receive_settings():
+    TODO: restart producer when the settings change
+    """
+    with current_mic.recorder(samplerate=samplerate, blocksize=blocksize) as mic:
+        while current_mic.id == new_mic:
+            data = await get_audio(mic)
+            # TODO: add other stuff to this payload
+            payload = {
+                "data": data
+            }
+            await websocket.send(payload)
+    current_mic = sc.get_microphone(new_mic, include_loopback=loopback)
+
+
+async def consumer(message):
+    """
+    Process the websocket message
+    """
+    return
+
+async def receive_handler(websocket):
     """
     Recieve stuff from the server via websocket, modifies global variables
     """
+    async for message in websocket:
+        await consumer(message)
+
+async def handler(websocket):
+    """
+    Start consumer and producer tasks
+    """
+    consumer_task = asyncio.create_task(receive_handler(websocket))
+    producer_task = asyncio.create_task(producer_handler(websocket))
+    done, pending = await asyncio.wait(
+        [consumer_task, producer_task],
+        return_when=asyncio.FIRST_COMPLETED,
+    )
+    for task in pending:
+        task.cancel()
+
+async def main():
+    """
+    Connect and run
+    """
     async with connect(DOCKER_WEB_SOCKET) as websocket:
-        while True:
-            response = await websocket.recv()
-            # do stuff with the response
-            print(response)
+        await handler(websocket)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
