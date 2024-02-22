@@ -1,0 +1,5 @@
+soundcard
+numpy
+zeroconf
+websockets
+requests

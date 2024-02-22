@@ -32,17 +32,17 @@ RUN adduser \
 
 # Get dependencies from apt
 RUN --mount=type=cache,target=/root/.cache/apt \
-    --mount=type=bind,source=requirements-apt.txt,target=requirements-apt.txt \
+    --mount=type=bind,source=docker-apt-requirements.txt,target=docker-apt-requirements.txt \
     apt-get update && \
-    apt-get install -y $(cat requirements-apt.txt)
+    apt-get install -y $(cat docker-apt-requirements.txt)
 
 # Download dependencies as a separate step to take advantage of Docker's caching.
 # Leverage a cache mount to /root/.cache/pip to speed up subsequent builds.
 # Leverage a bind mount to requirements.txt to avoid having to copy them into
 # into this layer.
 RUN --mount=type=cache,target=/root/.cache/pip \
-    --mount=type=bind,source=requirements.txt,target=requirements.txt \
-    python -m pip install -r requirements.txt
+    --mount=type=bind,source=docker-pip-requirements.txt,target=docker-pip-requirements.txt \
+    python -m pip install -r docker-pip-requirements.txt
 
 # build vue site
 #RUN cd vue-frontend && npm install 
@@ -59,6 +59,9 @@ COPY . .
 # Expose the port that the application listens on.
 EXPOSE 8000
 
+# TODO: add vue site
+# TODO: make flask server only internal
+# Port forward audio in port
 # Run the application.
 CMD flask --app src/flask_server run -p 8000 -h 0.0.0.0 --debug
     

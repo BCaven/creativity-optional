@@ -1,4 +1,3 @@
-soundcard
 numpy
 matplotlib
 librosa
@@ -6,5 +5,4 @@ Flask
 spotipy
 zeroconf
 opencv-python
-websockets
-requests
+flask-socketio
