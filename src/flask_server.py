@@ -105,6 +105,7 @@ def websocket_audio_in(json):
     """
     global audio_chunk
     global audio_str
+    print(json)
 
 
 

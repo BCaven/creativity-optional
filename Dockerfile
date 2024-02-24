@@ -63,5 +63,5 @@ EXPOSE 8000
 # TODO: make flask server only internal
 # Port forward audio in port
 # Run the application.
-CMD flask --app src/flask_server run -p 8000 -h 0.0.0.0 --debug
+CMD python3 src/flask_websocket_server.py -p 8000 -h 0.0.0.0 --debug
     
