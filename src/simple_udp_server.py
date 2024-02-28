@@ -1,8 +1,9 @@
 """
 The protocol:
 The client's first item is going to be the list of microphone names, ids, and which mic is currently being used
-    csv:
-        mic_name|mic_name|mic_name,mic_id|mic_id|mic_id,current_mic_name
+Unfortunately, these cannot be guarenteed to be smaller than buf_size so they
+are going to be sent in separate messages
+
 The second is the settings:
     buf_size
     blocksize
@@ -11,15 +12,18 @@ The second is the settings:
     shape
     etc
     formatted as a csv like the following:
-        buf_size,blocksize,samplerate,dtype,shape
+        buf_size,blocksize,samplerate,dtype,shape|shape|shape
 
 everything recieved after that is a np array of the raw audio stream
     these are sent as byte arrays which get converted to np arrays and readjusted to the correct shape
 
+TODO: support for multiple clients
+TODO: decide if this can stand alone, or if the flask server is also needed
 """
 
 import socket
 import numpy as np
+import sys
 
 # UDP globals
 SERVER_ADDR = "0.0.0.0"
@@ -34,17 +38,55 @@ con = None
 con, addr = sock.accept()
 print("client connected from", addr)
 # mic list
-mic_input = con.recv(BUF_SIZE)
-print(mic_input)
+num_mics = con.recv(BUF_SIZE)
+print("raw num mics:", num_mics)
+try:
+    num_mics = int.from_bytes(num_mics)
+except ValueError as error:
+    print(error)
+    sock.close()
+    sys.exit(1)
+
+all_microphones = {}
+for i in range(num_mics):
+    raw_in = con.recv(BUF_SIZE).decode().split(",")
+    if len(raw_in) == 1:
+        # mac gang
+        # to keep the rest of the program the same, we are going to
+        # pretend that mac ids and names are the same thing
+        all_microphones[raw_in[0]] = raw_in[0]
+    elif len(raw_in) == 2:
+        # id: name
+        all_microphones[raw_in[0]] = raw_in[1]
+    else:
+        sock.close()
+        raise ValueError(f"failed to parse incoming mic id,name pairs.\nWas expecting either 1 or 2 values, got {len(raw_in)}")
+print(all_microphones)   
+
 # settings
-raw_settings = con.recv(BUF_SIZE)
+raw_settings = con.recv(BUF_SIZE).decode().split(",")
+assert len(raw_settings) == 5, f"recieved the wrong number of settings, expected 5, got {len(raw_settings)}"
+# this order is always the same, so the spots will be hardcoded
 settings = {
-    'dtype': np.float32,
-    'shape': (1024, 2)
+    'buf_size': int(raw_settings[0]),
+    'blocksize': int(raw_settings[1]),
+    'samplerate': int(raw_settings[2]),
+    'dtype': raw_settings[3],
+    'shape': tuple(int(i) for i in raw_settings[4].split("|"))
 }
-print(raw_settings)
+print(settings)
+assert settings['buf_size'] == BUF_SIZE, f"bufsize failed to match: {settings['buf_size']} != {BUF_SIZE}"
 
 while True:
-    raw_data = con.recv(BUF_SIZE) 
-    cleaned = np.array(raw_data, dtype=settings['dtype'])
-    cleaned.shape = settings['shape']
+    try:
+        raw_data = con.recv(BUF_SIZE) 
+        cleaned = np.frombuffer(raw_data, dtype=settings['dtype'])
+        cleaned.shape = settings['shape']
+        avg = np.average(np.abs(cleaned))
+        peak = np.max(np.abs(cleaned))
+        print(f"avg: {avg:6.4f} peak: {peak:6.4f}")
+    except ValueError:
+        print("whoops, bad packet")
+        print(raw_data)
+        sys.exit(1)
+        

@@ -16,28 +16,41 @@ sock = socket.socket()
 sock.connect((SERVER_ADDR, SERVER_PORT))
 
 LOOPBACK = False
+MAC = False
 
 blocksize = 1024
 samplerate = 48000
 
 mics = sc.all_microphones(include_loopback=LOOPBACK)
-new_mic = sc.default_microphone().name
+new_mic = sc.default_microphone().id
 
-audio_devices = "|".join([m.name for m in mics]) + "," + "|".join([m.id for m in mics]) + "," + new_mic
-sock.send(audio_devices)
-# send the list
-# for now we do not care about the response
-#_ = requests.post(DOCKER_IP + "audio_source", data=audio_devices)
+
+print(f"number of mics: {len(mics)}")
+sock.send(len(mics).to_bytes(len(mics)//255 + 1))
+for mic in mics:
+    message = mic.id
+    if not MAC:
+        message += "," + mic.name
+    byte_message = bytearray(message, encoding='utf-8')
+    print(f"sending: {byte_message.decode()}")
+    sock.send(byte_message)
 
 # going to want a consumer and producer thread... or maybe not
 while True:
     try:
         chosen_mic = sc.get_microphone(new_mic, include_loopback=LOOPBACK)
-        new_mic = chosen_mic.name
+        new_mic = chosen_mic.id
         with chosen_mic.recorder(samplerate=samplerate, blocksize=blocksize) as mic:
-            current_name = chosen_mic.name
-            settings = ""
-            while current_name == new_mic:
+            current_id = chosen_mic.id
+            # the first chunk will just be disgarded because we need the settings
+            # not too worried about disgaring it because we dont have to worry about
+            # playing audio and dropping one packet isnt the end of the world
+            raw_chunk = np.abs(mic.record(numframes=None))
+            settings = str(BUF_SIZE) + "," + str(blocksize) + "," + str(samplerate) + "," + str(raw_chunk.dtype) + "," + "|".join(str(val) for val in raw_chunk.shape)
+            print(settings)
+            byte_message = bytearray(settings, encoding='utf-8')
+            sock.send(byte_message)
+            while current_id == new_mic:
                 # the actual number of frames in each chunk is the block size
                 # higher blocksize = easier on the system
                 # higher blocksizes inherently have latency because they have to 
@@ -50,21 +63,10 @@ while True:
                 avg = np.average(np.abs(data))
                 peak = np.max(np.abs(data))
 
-                # TODO: experiment with sending raw data
                 # sending as bytes - to convert back will need the data type and the original shape of the array
-                #print("original")
-                #print(data)
-                #print(data.shape)
-                #t = data.dtype
-                #shape = data.shape
-                #print("bytes")
+                t = data.dtype
+                shape = data.shape
                 b = data.tobytes()
-                #print(b)
-                #print("converted back")
-                #con = np.frombuffer(b, dtype=t)
-                #con.shape = shape
-                #print(con)
-
                 sock.send(b)
 
         
