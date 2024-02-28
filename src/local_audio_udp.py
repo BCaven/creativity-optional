@@ -1,9 +1,23 @@
+"""
+Local client:
+establishes a UDP connection to the server.
+Sends list of microphones, audio/connection settings, then
+continuously sends audio chunks
+
+
+TODO: listen for server responses (mic changes, setting changes)
+TODO: make this work as an executable
+TODO: include soundcard, numpy libraries in final executable so no installs are required
+TODO: *maybe* multicast to find the server
+"""
 import soundcard as sc
 import numpy as np
 import sys
 import socket
 
 # BUG: fuzzy search grabs loopback devices when given the name of the actual device (non-loopback)
+# current solution: local client only uses ids, frontend is given id:name pairs and presents names
+# to the user instead of ids
 
 # UDP globals
 SERVER_ADDR = "0.0.0.0"
@@ -15,7 +29,7 @@ BUF_SIZE = 8192
 sock = socket.socket()
 sock.connect((SERVER_ADDR, SERVER_PORT))
 
-LOOPBACK = False
+LOOPBACK = True
 MAC = False
 
 blocksize = 1024
