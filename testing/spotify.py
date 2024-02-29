@@ -10,13 +10,14 @@ client_credentials_manager = SpotifyClientCredentials()
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(scope=scope))
 # sp = spotipy.Spotify(auth_manager=client_credentials_manager)
 
-artist = "Taylor Swift"
-name = "exile"
+artist = "Tricot"
+name = "Swimmer"
 track = sp.search(q="artist:" + artist + " track:" + name, type="track", limit=1)
 track_id = track['tracks']['items'][0]['id']
 
 # print(sp.audio_analysis(track_id))
 features = sp.audio_features(track_id)
+print(name)
 pprint.pprint(features)
 
 #get user

@@ -2,6 +2,8 @@ import soundcard as sc
 import numpy as np
 import sys
 import requests
+import json
+from json import JSONEncoder
 
 # BUG: fuzzy search grabs loopback devices when given the name of the actual device (non-loopback)
 
@@ -11,11 +13,12 @@ LOOPBACK = False
 blocksize = 512
 samplerate = 48000
 
+# BUG: mac "could not decode string"
 mics = sc.all_microphones(include_loopback=LOOPBACK)
 new_mic = sc.default_microphone().name
 
 initial_request = {
-    "mics": [m.name for m in mics],
+    "mics": [m.id for m in mics],
     "source": new_mic,
     "samplerate": samplerate,
     "blocksize": blocksize
@@ -47,10 +50,11 @@ while True:
 
                 # TODO: experiment with sending raw data
                 # if you do, just add a new key called "data" with the raw np array
+                print(data)
                 payload = {
                     "avg": avg,
                     "peak": peak,
-                    "data": data,
+                    "data": json.dumps(data.tolist()),
                     "source": current_name
                 }
                 response = requests.post(DOCKER_IP + "audio_in", data=payload).json()

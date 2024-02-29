@@ -27,20 +27,24 @@ from flask import Flask
 from flask import request
 from flask import jsonify
 from time import time_ns
+import numpy as np
+import json
 
 #we need to set NUMDA_CACHE_DIR before we import librosa
 import os
 os.environ[ 'NUMBA_CACHE_DIR' ] = '/tmp/'
-from librosa_analysis import getData as getLibrosaData
+from librosa_analysis import Analyzer
 
 app = Flask(__name__)
 AUDIO_STR = ""
 AUDIO_SOURCE = ""
 AUDIO_CHUNK = []
 ALL_AUDIO = {}
+
+#some globals for librosa analysis
 blockrate = 512
 samplerate = 48000
-librosa_data = {}
+librosaWorker = Analyzer()
 @app.route("/")
 def main_page():
     return "<p>Hello world</p>"
@@ -82,7 +86,7 @@ def audio_in():
     global librosa_data
     if request.method == 'POST':
         data = request.form
-        AUDIO_CHUNK = data['data']
+        AUDIO_CHUNK = np.array(json.loads(data['data']))
         rpeak = float(data['peak'])
         ravg = float(data['avg'])
         bars = "#" * int(50 * ravg)
@@ -91,7 +95,8 @@ def audio_in():
 
         #get librosa data
         if samplerate:
-            librosa_data = getLibrosaData(AUDIO_CHUNK, samplerate)
+            librosa_data = librosaWorker.readData(AUDIO_CHUNK, samplerate)
+            print(librosa_data)
 
         response = {"bars": AUDIO_STR}
         if "source" in data:
