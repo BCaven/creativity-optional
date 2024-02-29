@@ -1,7 +1,6 @@
 import soundcard as sc
 import numpy as np
 import sys
-from websockets.sync.client import connect
 # will likely get rid of the `requests` library
 import requests
 
@@ -47,13 +46,15 @@ while True:
 
                 # TODO: experiment with sending raw data
                 # if you do, just add a new key called "data" with the raw np array
+                #print(data)
+
                 payload = {
-                    "avg": avg,
-                    "peak": peak,
-                    "data": data,
+                    "avg": float(avg),
+                    "peak": float(peak),
+                    "data": data.tolist(),
                     "source": current_name
                 }
-                response = requests.post(DOCKER_IP + "audio_in", data=payload).json()
+                response = requests.post(DOCKER_IP + "audio_in", json=payload).json()
                 #print(response)
                 if "source" in response:
                     # oh no we have to change audio devices

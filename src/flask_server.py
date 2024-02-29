@@ -1,6 +1,8 @@
 """
 Server that runs in the docker container
 
+This is the http implementation
+
 This server should call the blackbox processes and receive requests from the audio client
 NOTE: technically, the "client" application "serves" raw audio to this application
 
@@ -26,12 +28,16 @@ TODO:
 from flask import Flask
 from flask import request
 from flask import jsonify
-from time import time_ns
-from flask_socketio import SocketIO, emit
+import numpy as np
+import logging
 
 
 app = Flask(__name__)
-socketio = SocketIO(app)
+
+import logging
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+
 audio_str = ""
 audio_source = ""
 # TODO: find a good way to store many past chunks (preferably both push and pop are o(1))
@@ -71,8 +77,10 @@ def audio_in():
     global audio_source
     global audio_chunk
     if request.method == 'POST':
-        data = request.form
-        audio_chunk = data['data']
+        data = request.json
+        #print(data)
+        #print(data['data'])
+        audio_chunk = np.array(data['data']).reshape(-1)
         rpeak = float(data['peak'])
         ravg = float(data['avg'])
         bars = "#" * int(50 * ravg)
@@ -93,21 +101,21 @@ def audio_in():
         response.headers.add("Access-Control-Allow-Origin", "*")
         return response
 
-# TODO: look at using namespaces to support multiple audio inputs
-@socketio.on("audio_in")
-def websocket_audio_in(json):
+@app.route("/pico_audio", methods=['GET'])
+def pico_audio():
     """
-    Recieve audio chunk from websocket.
-
-    Functions effectively the same as the http post request for the same thing
-
-    TODO: write this function 
+    Do a FFT and return the data
     """
-    global audio_chunk
-    global audio_str
-    print(json)
-
-
+    num_motors = 8
+    if len(audio_chunk) > 0:
+        #return audio_chunk.tolist()
+        fft = np.fft.fft(audio_chunk).real
+        chunk_size = fft.size / num_motors
+        avg_chunks = np.abs(np.average(fft.reshape(-1, int(chunk_size)), axis=1))
+        normalized_chunks = avg_chunks # / avg_chunks.size
+        return jsonify({"motors": normalized_chunks.tolist()})
+    else:
+        return [0, 0, 0, 0, 0, 0, 0, 0]
 
 if __name__ == "__main__":
-    socketio.run(app)
+    app.run()

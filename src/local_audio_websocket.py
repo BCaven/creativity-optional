@@ -11,6 +11,7 @@ localhost_pem = pathlib.Path(__file__).with_name("localhost.pem")
 ssl_context.load_verify_locations(localhost_pem)
 
 # TODO: wss
+# TODO: udp connection
 # TODO: multicast discovery of server
 DOCKER_WEB_SOCKET = "http://0.0.0.0:5000/"
 RUNNING = True
