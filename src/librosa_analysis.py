@@ -7,7 +7,7 @@ class Analyzer:
         self.lengths = [] #contains lengths of last eight blocks
     
     def readData(self, chunk, samplerate):
-        print("##############################\nLIBROSA\n##################################")
+        # print("##############################\nLIBROSA\n##################################")
         #append data to the collected chunks
         self.audioChunks = np.append(self.audioChunks, chunk)
         self.lengths.append(chunk.shape[0])
@@ -17,10 +17,10 @@ class Analyzer:
             self.audioChunks = self.audioChunks[self.lengths.pop(0):]
         
         #feed data into librosa and get only the data pertaining to new portion
-        print(self.lengths[-1])
-        pulses = librosa.beat.plp(y=self.audioChunks, sr=samplerate)
-        print(pulses)
-        print(pulses.shape[0])
+        # print(self.lengths[-1])
+        pulses = librosa.beat.plp(y=self.audioChunks, sr=samplerate, win_length=self.lengths[-1])
+        # print(pulses)
+        # print(pulses.shape[0])
         pulses_avg = np.average(pulses)
         pulse_bar = "=" * int(50 * pulses_avg)
         return {"pulse": pulses_avg, "pulse_bar": pulse_bar}

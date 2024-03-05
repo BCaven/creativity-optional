@@ -45,6 +45,7 @@ ALL_AUDIO = {}
 blockrate = 512
 samplerate = 48000
 librosaWorker = Analyzer()
+librosa_data = {}
 @app.route("/")
 def main_page():
     return "<p>Hello world</p>"
@@ -92,6 +93,7 @@ def audio_in():
         bars = "#" * int(50 * ravg)
         mbars = "-" * int((50 * rpeak) - (50 * ravg))
         AUDIO_STR = bars + mbars
+        print(ravg)
 
         #get librosa data
         if samplerate:
