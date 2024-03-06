@@ -7,6 +7,7 @@ tmp/
 build
 htmlcov
 __pycache__/
+*.pem
 
 # vite build
 src/index.html
