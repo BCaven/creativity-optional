@@ -8,6 +8,12 @@ build
 htmlcov
 __pycache__/
 
+# vite build
+src/index.html
+src/favicon.ico
+src/static/
+
+
 # Logs
 logs
 *.log
@@ -28,6 +34,7 @@ coverage
 /cypress/screenshots/
 
 # Editor directories and files
+vue-frontend/.vscode/*
 .vscode/*
 !.vscode/extensions.json
 .idea

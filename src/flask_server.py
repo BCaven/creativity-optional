@@ -25,18 +25,18 @@ TODO: make api calls for Vue front end
 TODO: decide on a format for the api calls
 TODO: 
 """
-from flask import Flask
+from flask import Flask, render_template
 from flask import request
 from flask import jsonify
 import numpy as np
 import logging
-
-
-app = Flask(__name__)
-
 import logging
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
+
+app = Flask(__name__, template_folder='.')
+
+
 
 audio_str = ""
 audio_source = ""
@@ -45,10 +45,10 @@ audio_chunk = []
 all_audio = {}
 @app.route("/")
 def main_page():
-    return "<p>Hello world</p>"
+    return render_template('index.html')
 
 @app.route("/audio_source", methods = ['POST'])
-def audio_source():
+def get_audio_source():
     """
         This might end up being obsolete, but adding the header for now
     """

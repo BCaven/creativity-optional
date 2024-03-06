@@ -44,11 +44,16 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     --mount=type=bind,source=docker-pip-requirements.txt,target=docker-pip-requirements.txt \
     python -m pip install -r docker-pip-requirements.txt
 
+# TODO: in the final product, this will be built beforehand, 
+# and the files will already be in src/
+# so these lines will be obsolete
+# remember to also adjust the dockerignore accordingly
 # build vue site
-#RUN cd vue-frontend && npm install 
-#RUN --mount=type=cache,target=/root/.cache/vue \
-#    --mount=type=bind,source=vue-frontend/,target=vue-frontend/ \
-#    cd vue-frontend && npm run build
+COPY ./vue-frontend/* ./vue-frontend/
+RUN npm --prefix vue-frontend/ install
+RUN --mount=type=cache,target=/root/.cache/vue \
+    --mount=type=bind,source=vue-frontend/,target=vue-frontend/ \
+    npm --prefix vue-frontend/ run build
 
 # Switch to the non-privileged user to run the application.
 USER appuser
@@ -59,9 +64,6 @@ COPY . .
 # Expose the port that the application listens on.
 EXPOSE 8000
 
-# TODO: add vue site
-# TODO: make flask server only internal
-# Port forward audio in port
 # Run the application.
 CMD flask --app src/flask_server run -p 8000 -h 0.0.0.0 --debug
     
