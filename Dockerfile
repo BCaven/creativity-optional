@@ -50,8 +50,10 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 # remember to also adjust the dockerignore accordingly
 # build vue site
 COPY ./vue-frontend/* ./vue-frontend/
-RUN npm --prefix vue-frontend/ install
-RUN --mount=type=cache,target=/root/.cache/vue \
+RUN --mount=type=cache,target=/root/.cache/vue-npm \
+    --mount=type=bind,source=vue-frontend/package.json,target=vue-frontend/package.json \
+    npm --prefix vue-frontend/ install
+RUN --mount=type=cache,target=/root/.cache/vue-install \
     --mount=type=bind,source=vue-frontend/,target=vue-frontend/ \
     npm --prefix vue-frontend/ run build
 
