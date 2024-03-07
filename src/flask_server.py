@@ -24,28 +24,33 @@ Server: Flask
 TODO: make api calls for Vue front end 
 TODO: decide on a format for the api calls
 """
-from flask import Flask, render_template
-from flask import request
-from flask import jsonify
+from flask import Flask, render_template, request, jsonify
 import numpy as np
 import logging
-import logging
 import warnings
+from celery import Celery, Task
 
+# using basic template from: https://flask.palletsprojects.com/en/2.3.x/patterns/celery/
+# might want to just copy this instead: https://github.com/pallets/flask/tree/main/examples/celery
+def celery_init_app(app: Flask) -> Celery:
+    class FlaskTask(Task):
+        def __call__(self, *args: object, **kwargs: object) -> object:
+            with app.app_context():
+                return self.run(*args, **kwargs)
+
+    celery_app = Celery(app.name, task_cls=FlaskTask)
+    celery_app.config_from_object(app.config["CELERY"])
+    celery_app.set_default()
+    app.extensions["celery"] = celery_app
+    return celery_app
 
 
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
-app = Flask(__name__, template_folder='.')
-
-from celery import Celery
-import celeryconfig
-
-# TODO: make this correct
-# TODO: look into making this use celeryconfig file
-celery_app = Celery()
-celery_app.config_from_object(celeryconfig)
+flask_app = Flask(__name__, template_folder='.')
+flask_app.config.from_pyfile('flask_config.py')
+celery_app = celery_init_app(flask_app)
 
 
 audio_str = ""
@@ -53,11 +58,11 @@ audio_source = ""
 # TODO: find a good way to store many past chunks (preferably both push and pop are o(1))
 audio_chunk = []
 all_audio = {}
-@app.route("/")
+@flask_app.route("/")
 def main_page():
     return render_template('index.html')
 
-@app.route("/audio_source", methods = ['GET', 'POST'])
+@flask_app.route("/audio_source", methods = ['GET', 'POST'])
 def get_audio_source():
     """
     This might end up being obsolete, but adding the header for now
@@ -75,7 +80,7 @@ def get_audio_source():
         return audio_source
 
 
-@app.route("/audio_in", methods=['GET', 'POST'])
+@flask_app.route("/audio_in", methods=['GET', 'POST'])
 def audio_in():
     """
     Old HTTP implementation to send audio data to server
@@ -113,7 +118,7 @@ def audio_in():
         response.headers.add("Access-Control-Allow-Origin", "*")
         return response
 
-@app.route("/pico_audio", methods=['GET'])
+@flask_app.route("/pico_audio", methods=['GET'])
 def pico_audio():
     """
     Do a FFT and return the data
@@ -135,4 +140,4 @@ def pico_audio():
         return [0, 0, 0, 0, 0, 0, 0, 0]
 
 if __name__ == "__main__":
-    app.run()
+    flask_app.run()
