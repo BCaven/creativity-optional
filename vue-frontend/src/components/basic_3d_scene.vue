@@ -10,6 +10,9 @@
       return {
       }
     },
+    props: {
+        volume: Number
+    },
     methods: {
       init: function() {
         this.scene = new THREE.Scene()
@@ -38,6 +41,7 @@
   
         this.cube.rotation.x += 0.01;
         this.cube.rotation.y += 0.01;
+        this.cube.position.x = this.volume;
   
         this.renderer.render(this.scene, this.camera);
         //console.log("animating...");

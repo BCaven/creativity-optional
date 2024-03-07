@@ -10,6 +10,7 @@ import basic_3d_scene from "./components/basic_3d_scene.vue";
 // look into service workers as a way to automate the process of receiving data from the server
 const server_route = "0.0.0.0:8000";
 let sound_bar = ref("");
+let sound_volume = ref(0);
 let sound_options = ref([]);
 let selected_input = ref("");
 const timer = ref();
@@ -31,11 +32,13 @@ async function updateSoundData() {
   //console.log(response.json());
   let r = await response.json();
   sound_bar.value = r.bars;
+  sound_volume.value = r.bars.length;
   console.log(sound_bar.value);
 }
 
 function countDownFunc () {
   //console.log("updating sound data");
+  // TODO: add this back in, it is disabled because I am testing outside of Docker because the laptop I have is very low power
   //updateSoundData();
 }
 
@@ -63,7 +66,8 @@ onBeforeUnmount(() => {
       label="audio input"
       :items="sound_options"
       ></v-combobox>
-    <basic_3d_scene />
+    <v-slider v-model="sound_volume"></v-slider>
+    <basic_3d_scene :volume="sound_volume"/>
   </main>
 </template>
 
