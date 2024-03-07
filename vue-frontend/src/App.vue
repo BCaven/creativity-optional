@@ -1,5 +1,6 @@
 <script setup>
 import { onMounted, onBeforeUnmount, ref } from "vue";
+import basic_3d_scene from "./components/basic_3d_scene.vue";
 
 
 // use multicast or something to find this server route
@@ -35,7 +36,7 @@ async function updateSoundData() {
 
 function countDownFunc () {
   //console.log("updating sound data");
-  updateSoundData();
+  //updateSoundData();
 }
 
 // Instantiate
@@ -62,6 +63,7 @@ onBeforeUnmount(() => {
       label="audio input"
       :items="sound_options"
       ></v-combobox>
+    <basic_3d_scene />
   </main>
 </template>
 
