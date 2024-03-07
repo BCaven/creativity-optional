@@ -1,7 +1,7 @@
 """
 Server that runs in the docker container
 
-This is the http implementation
+TODO: update this documentation
 
 This server should call the blackbox processes and receive requests from the audio client
 NOTE: technically, the "client" application "serves" raw audio to this application
@@ -23,7 +23,6 @@ Server: Flask
 
 TODO: make api calls for Vue front end 
 TODO: decide on a format for the api calls
-TODO: 
 """
 from flask import Flask, render_template
 from flask import request
@@ -31,11 +30,22 @@ from flask import jsonify
 import numpy as np
 import logging
 import logging
+import warnings
+
+
+
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
 app = Flask(__name__, template_folder='.')
 
+from celery import Celery
+import celeryconfig
+
+# TODO: make this correct
+# TODO: look into making this use celeryconfig file
+celery_app = Celery()
+celery_app.config_from_object(celeryconfig)
 
 
 audio_str = ""
@@ -47,10 +57,10 @@ all_audio = {}
 def main_page():
     return render_template('index.html')
 
-@app.route("/audio_source", methods = ['POST'])
+@app.route("/audio_source", methods = ['GET', 'POST'])
 def get_audio_source():
     """
-        This might end up being obsolete, but adding the header for now
+    This might end up being obsolete, but adding the header for now
     """
     global all_audio
     global audio_source
@@ -68,18 +78,20 @@ def get_audio_source():
 @app.route("/audio_in", methods=['GET', 'POST'])
 def audio_in():
     """
-        How the local application to the server.
-        It is also called by the frontend UI to test the dynamic site,
-        although this will likely change
+    Old HTTP implementation to send audio data to server
+    Keeping it for compatability
+    How the local application to the server.
+    It is also called by the frontend UI to test the dynamic site,
+    although this will likely change
     """
+    warnings.warn("Using HTTP to send and recieve audio data is going to be deprecated in a later version",
+                  DeprecationWarning)
     # TODO: change this later, it is just for testing
     global audio_str
     global audio_source
     global audio_chunk
     if request.method == 'POST':
         data = request.json
-        #print(data)
-        #print(data['data'])
         audio_chunk = np.array(data['data']).reshape(-1)
         rpeak = float(data['peak'])
         ravg = float(data['avg'])
@@ -105,6 +117,11 @@ def audio_in():
 def pico_audio():
     """
     Do a FFT and return the data
+    used for integration with raspberry pi pico
+    this was just an experiment though
+
+    TODO: make sure all useful parts of this function are captured
+    TODO: delete this function
     """
     num_motors = 8
     if len(audio_chunk) > 0:

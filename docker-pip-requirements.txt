@@ -6,3 +6,4 @@ spotipy
 zeroconf
 opencv-python
 flask-socketio
+celery[redis]
