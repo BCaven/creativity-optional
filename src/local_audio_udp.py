@@ -20,7 +20,7 @@ import socket
 # to the user instead of ids
 
 # UDP globals
-SERVER_ADDR = "0.0.0.0"
+SERVER_ADDR = "127.0.0.1"
 SERVER_PORT = 4242
 # might want to split this array into multiple parts
 BUF_SIZE = 8192
@@ -78,10 +78,9 @@ while True:
                 peak = np.max(np.abs(data))
 
                 # sending as bytes - to convert back will need the data type and the original shape of the array
-                t = data.dtype
-                shape = data.shape
                 b = data.tobytes()
                 sock.send(b)
+                print(f'latency: {mic.latency}')
 
         
     except KeyboardInterrupt:
