@@ -38,8 +38,8 @@ async function updateSoundData() {
 
 function countDownFunc () {
   //console.log("updating sound data");
-  // TODO: add this back in, it is disabled because I am testing outside of Docker because the laptop I have is very low power
-  //updateSoundData();
+  // NOTE: when testing without audio data, comment out this function call
+  updateSoundData();
 }
 
 // Instantiate
