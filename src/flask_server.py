@@ -28,33 +28,37 @@ from flask import Flask, render_template, request, jsonify
 import numpy as np
 import logging
 import warnings
-from celery import Celery, Task
+#from celery import Celery, Task
 
 # using basic template from: https://flask.palletsprojects.com/en/2.3.x/patterns/celery/
 # might want to just copy this instead: https://github.com/pallets/flask/tree/main/examples/celery
-def celery_init_app(app: Flask) -> Celery:
-    class FlaskTask(Task):
-        def __call__(self, *args: object, **kwargs: object) -> object:
-            with app.app_context():
-                return self.run(*args, **kwargs)
-
-    celery_app = Celery(app.name, task_cls=FlaskTask)
-    celery_app.config_from_object(app.config["CELERY"])
-    celery_app.set_default()
-    app.extensions["celery"] = celery_app
-    return celery_app
+#def celery_init_app(app: Flask) -> Celery:
+#    class FlaskTask(Task):
+##        def __call__(self, *args: object, **kwargs: object) -> object:
+#            with app.app_context():
+#                return self.run(*args, **kwargs)#
+#
+#    celery_app = Celery(app.name, task_cls=FlaskTask)
+#    celery_app.config_from_object(app.config["CELERY"])
+#    celery_app.set_default()
+#    app.extensions["celery"] = celery_app
+#    return celery_app
 
 
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
 flask_app = Flask(__name__, template_folder='.')
-flask_app.config.from_pyfile('flask_config.py')
-celery_app = celery_init_app(flask_app)
+#flask_app.config.from_pyfile('flask_config.py')
+#celery_app = celery_init_app(flask_app)
 
 
 audio_str = ""
 audio_source = ""
+audio_raw_max = 0
+AUDIO_SAVED_CHUNKS = 5
+audio_last = []
+audio_max_last = audio_raw_max
 # TODO: find a good way to store many past chunks (preferably both push and pop are o(1))
 audio_chunk = []
 all_audio = {}
@@ -75,9 +79,9 @@ def get_audio_source():
             all_audio = data["mics"]
         if "source" in data:
             audio_source = data["source"]
-        return audio_source
+        return jsonify({"source": audio_source, "mics": all_audio})
     else:
-        return audio_source
+        return jsonify({"source": audio_source, "mics": all_audio})
 
 
 @flask_app.route("/audio_in", methods=['GET', 'POST'])
@@ -95,11 +99,23 @@ def audio_in():
     global audio_str
     global audio_source
     global audio_chunk
+    global audio_raw_max
+    global audio_last
+    global audio_max_last
+    global AUDIO_SAVED_CHUNKS
     if request.method == 'POST':
         data = request.json
         audio_chunk = np.array(data['data']).reshape(-1)
         rpeak = float(data['peak'])
         ravg = float(data['avg'])
+        audio_raw_max = rpeak
+        # NOTE: all of this computation is better done in a celery task, but since those arent set up yet,
+        # doing basic analysis here
+        audio_last.append(rpeak)
+        if (len(audio_last) > AUDIO_SAVED_CHUNKS):
+            audio_last.pop(0)
+
+        audio_max_last = max(audio_last)
         bars = "#" * int(50 * ravg)
         mbars = "-" * int((50 * rpeak) - (50 * ravg))
         audio_str = bars + mbars
@@ -107,16 +123,40 @@ def audio_in():
         response = {"bars": audio_str}
         if "source" in data:
             if data["source"] != audio_source:
-                print(audio_source)
+                print(f"{audio_source} != {data['source']}")
                 response["source"] = audio_source
         response = jsonify(response)
         #response.headers.add("Access-Control-Allow-Origin", "*")
         return response
     else:
-        response = jsonify({"bars": audio_str, "source": audio_source})
+        response = jsonify({"bars": audio_str, "peak": audio_max_last, "source": audio_source})
         # TODO: the actual CORS policy
         response.headers.add("Access-Control-Allow-Origin", "*")
         return response
+    
+
+
+@flask_app.route("/fft_audio", methods=['GET'])
+def fft_audio():
+    """
+    Do a FFT and return the data
+    used for integration with raspberry pi pico
+    this was just an experiment though
+
+    TODO: make sure all useful parts of this function are captured
+    TODO: delete this function
+    """
+    num_motors = 8
+    if len(audio_chunk) > 0:
+        #return audio_chunk.tolist()
+        fft = np.fft.fft(audio_chunk).real
+        chunk_size = fft.size / num_motors
+        avg_chunks = np.abs(np.average(fft.reshape(-1, int(chunk_size)), axis=1))
+        normalized_chunks = avg_chunks # / avg_chunks.size
+        return jsonify({"frequencies": normalized_chunks.tolist()})
+    else:
+        return jsonify({'frequencies': [0, 0, 0, 0, 0, 0, 0, 0]})
+
 
 @flask_app.route("/pico_audio", methods=['GET'])
 def pico_audio():
@@ -137,7 +177,7 @@ def pico_audio():
         normalized_chunks = avg_chunks # / avg_chunks.size
         return jsonify({"motors": normalized_chunks.tolist()})
     else:
-        return [0, 0, 0, 0, 0, 0, 0, 0]
+        return jsonify({'motors': [0, 0, 0, 0, 0, 0, 0, 0]})
 
 if __name__ == "__main__":
     flask_app.run()
