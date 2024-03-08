@@ -19,7 +19,8 @@ TODO: make a pub sub server out of this
 import pyaudio
 import numpy as np
 import librosa
-import dynamic2
+import testing.old.dynamic2 as dynamic2
+import time
 
 CHUNK = 2**11
 RATE = 44100
@@ -29,7 +30,7 @@ stream = p.open(format=pyaudio.paInt16,
                 channels=2,
                 rate=RATE,
                 input=True,
-                input_device_index=2,
+                # input_device_index=2,
                 # default audio out
                 frames_per_buffer=CHUNK)
 
@@ -42,7 +43,7 @@ while True:
         bars = "#" * int(50 * peak / 2 ** 16)
         max_val = np.max(data)
         mbars = "-" * int((50 * max_val / 2 ** 16) - (50 * peak / 2 ** 16))
-        dynamic2.imageLoop(peak)
+        dynamic2.imageLoop(peak / 3, peak / 5, peak / 10)
         print("%05d %s" % (peak, bars + mbars))
         # tempo, beat_frames = librosa.beat.beat_track(y=data, sr=RATE)
         # print(f"tempo: {tempo}\nbeat_frames: {beat_frames}")

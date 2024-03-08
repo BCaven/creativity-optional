@@ -22,13 +22,18 @@ hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
 h, s, v = cv2.split(hsv)
 
 
-def imageLoop(offset):
+def imageLoop(H, S, V):
     # Hue shift
     # hnew = np.mod(h + q.pop(), 180).astype(np.uint8)
 
     # recombine
     # hsv_new = cv2.merge([hnew, s, v])
-    hsv[:,:,0] = np.mod(h + offset, 180).astype(np.uint8)
+    hsv[:,:,0] = np.mod(h + H, 180).astype(np.uint8)
+    
+    # hsv[:,:,1] = np.mod(s + S, 256).astype(np.uint8)
+
+    # hsv[:,:,2] = np.mod(v + V, 256).astype(np.uint8)
+
 
     # back to bgr
     bgr_new = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
@@ -42,3 +47,8 @@ def imageLoop(offset):
     cv2.imshow('bgr_new',bgr_new)
     cv2.waitKey(1)
 # cv2.destroyAllWindows()
+    
+
+if __name__ == "__main__":
+    imageLoop(30)
+    cv2.waitKey(0)
