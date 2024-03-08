@@ -6,7 +6,14 @@ tmp/
 *.egg
 build
 htmlcov
-testing/three/node_modules/__pycache__/
+__pycache__/
+*.pem
+
+# vite build
+src/index.html
+src/favicon.ico
+src/static/
+
 
 # Logs
 logs
@@ -28,6 +35,7 @@ coverage
 /cypress/screenshots/
 
 # Editor directories and files
+vue-frontend/.vscode/*
 .vscode/*
 !.vscode/extensions.json
 .idea

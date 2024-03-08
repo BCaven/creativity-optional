@@ -13,17 +13,18 @@ class RealTimeAudioHandler(object):
         self.CHUNK = 1024 * 2
         self.p = None
         self.stream = None
+        self.pulseArray = np.empty([5])
 
     def start(self):
         self.p = pyaudio.PyAudio()
         # for reading from mic
         self.stream = self.p.open(format=self.FORMAT,
-                                  channels=self.CHANNELS,
-                                  rate=self.RATE,
-                                  input=True,
-                                  output=False,
-                                  stream_callback=self.callback,
-                                  frames_per_buffer=self.CHUNK)
+                                    channels=self.CHANNELS,
+                                    rate=self.RATE,
+                                    input=True,
+                                    output=False,
+                                    stream_callback=self.callback,
+                                    frames_per_buffer=self.CHUNK)
         # self.stream = self.p.open(format=pyaudio.paInt16, channels=1, rate=self.RATE, input=True,
         #             frames_per_buffer=self.CHUNK)
 
@@ -34,15 +35,23 @@ class RealTimeAudioHandler(object):
 
     def callback(self, in_data, frame_count, time_info, flag):
         numpy_array = np.frombuffer(in_data, dtype=np.float32)
-        print(frame_count, time_info, flag)
-        librosa.feature.mfcc(y=numpy_array)
-        tempo, beats = librosa.beat.beat_track(y=numpy_array)
-        print(tempo, beats)
+        pulse = librosa.beat.plp(y=numpy_array, sr=self.RATE)
+        self.pulseArray = np.append(self.pulseArray, pulse)
+        # print(frame_count, time_info, flag)
+        # librosa.feature.mfcc(y=numpy_array)
+        # tempo, beats = librosa.beat.beat_track(y=numpy_array)
+        # print(tempo, beats)
+        print(pulse)
         return None, pyaudio.paContinue
 
     def mainloop(self):
-        while (self.stream.is_active()): # if using button you can set self.stream to 0 (self.stream = 0), otherwise you can use a stop condition
-            time.sleep(2.0)
+        try:
+            while (self.stream.is_active()): # if using button you can set self.stream to 0 (self.stream = 0), otherwise you can use a stop condition
+                time.sleep(2.0)
+        except KeyboardInterrupt:
+            print("\n\n---------------------------------")
+            print(self.pulseArray)
+            self.stop()
 
 
 audio = RealTimeAudioHandler()
