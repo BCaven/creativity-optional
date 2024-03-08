@@ -28,29 +28,29 @@ from flask import Flask, render_template, request, jsonify
 import numpy as np
 import logging
 import warnings
-from celery import Celery, Task
+#from celery import Celery, Task
 
 # using basic template from: https://flask.palletsprojects.com/en/2.3.x/patterns/celery/
 # might want to just copy this instead: https://github.com/pallets/flask/tree/main/examples/celery
-def celery_init_app(app: Flask) -> Celery:
-    class FlaskTask(Task):
-        def __call__(self, *args: object, **kwargs: object) -> object:
-            with app.app_context():
-                return self.run(*args, **kwargs)
-
-    celery_app = Celery(app.name, task_cls=FlaskTask)
-    celery_app.config_from_object(app.config["CELERY"])
-    celery_app.set_default()
-    app.extensions["celery"] = celery_app
-    return celery_app
+#def celery_init_app(app: Flask) -> Celery:
+#    class FlaskTask(Task):
+##        def __call__(self, *args: object, **kwargs: object) -> object:
+#            with app.app_context():
+#                return self.run(*args, **kwargs)#
+#
+#    celery_app = Celery(app.name, task_cls=FlaskTask)
+#    celery_app.config_from_object(app.config["CELERY"])
+#    celery_app.set_default()
+#    app.extensions["celery"] = celery_app
+#    return celery_app
 
 
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
 flask_app = Flask(__name__, template_folder='.')
-flask_app.config.from_pyfile('flask_config.py')
-celery_app = celery_init_app(flask_app)
+#flask_app.config.from_pyfile('flask_config.py')
+#celery_app = celery_init_app(flask_app)
 
 
 audio_str = ""

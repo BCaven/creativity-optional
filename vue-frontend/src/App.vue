@@ -47,7 +47,7 @@ onMounted(() => {
   // could probably make this refresh faster given a better computer - I am testing this on my garbage laptop
   timer.value = setInterval(() => {
     countDownFunc();
-  }, 100); // 10 times every second
+  }, 200); // 10 times every second
 });
 
 // Clean up
