@@ -26,5 +26,8 @@ pprint.pprint(user)
 
 while (True):
     song = sp.currently_playing()
-    pprint.pprint(song['item']['name'])
+    if song:
+        pprint.pprint(song['item']['name'])
+    else:
+        print("No song playing.")
     time.sleep(1)

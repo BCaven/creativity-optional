@@ -1,9 +1,9 @@
-soundcard
 numpy
 matplotlib
 librosa
 Flask
-requests
 spotipy
 zeroconf
 opencv-python
+flask-socketio
+celery[redis]
