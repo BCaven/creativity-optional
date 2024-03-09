@@ -32,29 +32,38 @@ RUN adduser \
 
 # Get dependencies from apt
 RUN --mount=type=cache,target=/root/.cache/apt \
-    --mount=type=bind,source=requirements-apt.txt,target=requirements-apt.txt \
+    --mount=type=bind,source=docker-apt-requirements.txt,target=docker-apt-requirements.txt \
     apt-get update && \
-    apt-get install -y $(cat requirements-apt.txt)
+    apt-get install -y $(cat docker-apt-requirements.txt)
 
 # Download dependencies as a separate step to take advantage of Docker's caching.
 # Leverage a cache mount to /root/.cache/pip to speed up subsequent builds.
 # Leverage a bind mount to requirements.txt to avoid having to copy them into
 # into this layer.
 RUN --mount=type=cache,target=/root/.cache/pip \
-    --mount=type=bind,source=requirements.txt,target=requirements.txt \
-    python -m pip install -r requirements.txt
+    --mount=type=bind,source=docker-pip-requirements.txt,target=docker-pip-requirements.txt \
+    python -m pip install -r docker-pip-requirements.txt
 
+
+# Copy the source code into the container.
+COPY . .
+
+# TODO: in the final product, this will be built beforehand, 
+# and the files will already be in src/
+# so these lines will be obsolete
+# remember to also adjust the dockerignore accordingly
 # build vue site
-#RUN cd vue-frontend && npm install 
-#RUN --mount=type=cache,target=/root/.cache/vue \
-#    --mount=type=bind,source=vue-frontend/,target=vue-frontend/ \
-#    cd vue-frontend && npm run build
+RUN --mount=type=cache,target=/root/.cache/vue-npm \
+    --mount=type=bind,source=vue-frontend/package.json,target=vue-frontend/package.json \
+    npm --prefix vue-frontend/ install
+RUN --mount=type=cache,target=/root/.cache/vue-install \
+    --mount=type=bind,source=vue-frontend/,target=vue-frontend/ \
+    npm --prefix vue-frontend/ run build
 
 # Switch to the non-privileged user to run the application.
 USER appuser
 
-# Copy the source code into the container.
-COPY . .
+
 
 # Expose the port that the application listens on.
 EXPOSE 8000

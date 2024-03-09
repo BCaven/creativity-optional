@@ -1,5 +1,6 @@
 <script setup>
 import { onMounted, onBeforeUnmount, ref } from "vue";
+import light_example_scene from "./components/light_example_scene.vue";
 
 
 // use multicast or something to find this server route
@@ -10,6 +11,9 @@ import { onMounted, onBeforeUnmount, ref } from "vue";
 const server_route = "0.0.0.0:8000";
 let sound_bar = ref("");
 let pulse_bar = ref("");
+let sound_volume = ref(0);
+let fft = ref([]);
+let selected_item = ref({"id": "", "name": ""});
 let sound_options = ref([]);
 let selected_input = ref("");
 const timer = ref();
@@ -17,11 +21,24 @@ const timer = ref();
 async function getSoundOptions() {
   // get all input options from local controller
   console.log("getting sound options from server");
-  const response = await fetch("http://" + server_route + "/audio_sources");
+  const response = await fetch("http://" + server_route + "/audio_source");
   let r = await response.json();
   // update the list of mics and selected mic from the server
-  sound_options.value = r['mics'];
-  selected_input.value = r['source'];
+  console.log(r.mics)
+  sound_options.value = r.mics;
+  selected_input.value = r.source;
+}
+async function updateSoundOptions() {
+  selected_input.value = selected_item.value.name;
+  console.log("sending new sound source to server");
+  const response = await fetch(
+    "http://" + server_route + "/audio_source",
+    {
+      method: "POST",
+      body: JSON.stringify(selected_input)
+    }
+  );
+  let r = await response.json();
 }
 
 async function updateSoundData() {
@@ -32,14 +49,20 @@ async function updateSoundData() {
   let r = await response.json();
   console.log(r);
   sound_bar.value = r.bars;
-  console.log(sound_bar.value);
-  pulse_bar.value = r.librosa_data.pulse_bar;
-  console.log(pulse_bar.value);
+  sound_volume.value = r.peak;
+  //console.log(sound_bar.value);
+}
+async function updateFFTData() {
+  const response = await fetch("http://" + server_route + "/fft_audio");
+  let r = await response.json();
+  fft.value = r['frequencies'];
 }
 
 function countDownFunc () {
   //console.log("updating sound data");
+  // NOTE: when testing without audio data, comment out this function call
   updateSoundData();
+  updateFFTData();
 }
 
 // Instantiate
@@ -47,7 +70,7 @@ onMounted(() => {
   // could probably make this refresh faster given a better computer - I am testing this on my garbage laptop
   timer.value = setInterval(() => {
     countDownFunc();
-  }, 100); // 10 times every second
+  }, 60); // ~15 times every second
 });
 
 // Clean up
@@ -63,10 +86,17 @@ onBeforeUnmount(() => {
     <p>Audio Device: {{ selected_input }}</p>
     <p> Current Audio: {{ sound_bar }}</p>
     <p> Beat Box Corner: {{ pulse_bar }}</p>
-    <v-combobox
+    <!-- <v-combobox
       label="audio input"
       :items="sound_options"
-      ></v-combobox>
+      v-model="selected_item"
+      item-text="name"
+      single-line
+      return-object
+      ></v-combobox> -->
+    <v-progress-linear max=1 model-value=0 v-model="sound_volume" :height="12"></v-progress-linear>
+
+    <light_example_scene :volume="sound_volume"/>
   </main>
 </template>
 

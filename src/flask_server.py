@@ -1,6 +1,8 @@
 """
 Server that runs in the docker container
 
+TODO: update this documentation
+
 This server should call the blackbox processes and receive requests from the audio client
 NOTE: technically, the "client" application "serves" raw audio to this application
 
@@ -21,95 +23,161 @@ Server: Flask
 
 TODO: make api calls for Vue front end 
 TODO: decide on a format for the api calls
-TODO: 
 """
-from flask import Flask
-from flask import request
-from flask import jsonify
-from time import time_ns
+from flask import Flask, render_template, request, jsonify
 import numpy as np
-import json
+import logging
+import warnings
+#from celery import Celery, Task
 
-#we need to set NUMDA_CACHE_DIR before we import librosa
-import os
-os.environ[ 'NUMBA_CACHE_DIR' ] = '/tmp/'
-from librosa_analysis import Analyzer
+# using basic template from: https://flask.palletsprojects.com/en/2.3.x/patterns/celery/
+# might want to just copy this instead: https://github.com/pallets/flask/tree/main/examples/celery
+#def celery_init_app(app: Flask) -> Celery:
+#    class FlaskTask(Task):
+##        def __call__(self, *args: object, **kwargs: object) -> object:
+#            with app.app_context():
+#                return self.run(*args, **kwargs)#
+#
+#    celery_app = Celery(app.name, task_cls=FlaskTask)
+#    celery_app.config_from_object(app.config["CELERY"])
+#    celery_app.set_default()
+#    app.extensions["celery"] = celery_app
+#    return celery_app
 
-app = Flask(__name__)
-AUDIO_STR = ""
-AUDIO_SOURCE = ""
-AUDIO_CHUNK = []
-ALL_AUDIO = {}
 
-#some globals for librosa analysis
-blockrate = 512
-samplerate = 48000
-librosaWorker = Analyzer()
-librosa_data = {}
-@app.route("/")
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+
+flask_app = Flask(__name__, template_folder='.')
+#flask_app.config.from_pyfile('flask_config.py')
+#celery_app = celery_init_app(flask_app)
+
+
+audio_str = ""
+audio_source = ""
+audio_raw_max = 0
+AUDIO_SAVED_CHUNKS = 5
+audio_last = []
+audio_max_last = audio_raw_max
+# TODO: find a good way to store many past chunks (preferably both push and pop are o(1))
+audio_chunk = []
+all_audio = {}
+@flask_app.route("/")
 def main_page():
-    return "<p>Hello world</p>"
+    return render_template('index.html')
 
-@app.route("/audio_source", methods = ['POST'])
-def audio_source():
+@flask_app.route("/audio_source", methods = ['GET', 'POST'])
+def get_audio_source():
     """
-        This might end up being obsolete, but adding the header for now
+    This might end up being obsolete, but adding the header for now
     """
-    global ALL_AUDIO
-    global AUDIO_SOURCE
-    global samplerate
-    global blockrate
+    global all_audio
+    global audio_source
     if request.method == "POST":
         data = request.form
         if "mics" in data:
-            ALL_AUDIO = data["mics"]
+            all_audio = data["mics"]
         if "source" in data:
-            AUDIO_SOURCE = data["source"]
-        if "samplerate" in data:
-            samplerate = samplerate
-        if "blockrate" in data:
-            blockrate = blockrate
-        return AUDIO_SOURCE
-    return AUDIO_SOURCE
+            audio_source = data["source"]
+        return jsonify({"source": audio_source, "mics": all_audio})
+    else:
+        return jsonify({"source": audio_source, "mics": all_audio})
 
 
-@app.route("/audio_in", methods=['GET', 'POST'])
+@flask_app.route("/audio_in", methods=['GET', 'POST'])
 def audio_in():
     """
-        How the local application to the server.
-        It is also called by the frontend UI to test the dynamic site,
-        although this will likely change
+    Old HTTP implementation to send audio data to server
+    Keeping it for compatability
+    How the local application to the server.
+    It is also called by the frontend UI to test the dynamic site,
+    although this will likely change
     """
+    warnings.warn("Using HTTP to send and recieve audio data is going to be deprecated in a later version",
+                  DeprecationWarning)
     # TODO: change this later, it is just for testing
-    global AUDIO_STR
-    global AUDIO_SOURCE
-    global AUDIO_CHUNK
-    global librosa_data
+    global audio_str
+    global audio_source
+    global audio_chunk
+    global audio_raw_max
+    global audio_last
+    global audio_max_last
+    global AUDIO_SAVED_CHUNKS
     if request.method == 'POST':
-        data = request.form
-        AUDIO_CHUNK = np.array(json.loads(data['data']))
+        data = request.json
+        audio_chunk = np.array(data['data']).reshape(-1)
         rpeak = float(data['peak'])
         ravg = float(data['avg'])
+        audio_raw_max = rpeak
+        # NOTE: all of this computation is better done in a celery task, but since those arent set up yet,
+        # doing basic analysis here
+        audio_last.append(rpeak)
+        if (len(audio_last) > AUDIO_SAVED_CHUNKS):
+            audio_last.pop(0)
+
+        audio_max_last = max(audio_last)
         bars = "#" * int(50 * ravg)
         mbars = "-" * int((50 * rpeak) - (50 * ravg))
-        AUDIO_STR = bars + mbars
-        print(ravg)
+        audio_str = bars + mbars
 
-        #get librosa data
-        if samplerate:
-            librosa_data = librosaWorker.readData(AUDIO_CHUNK, samplerate)
-            print(librosa_data)
-
-        response = {"bars": AUDIO_STR}
+        response = {"bars": audio_str}
         if "source" in data:
-            if data["source"] != AUDIO_SOURCE:
-                print(AUDIO_SOURCE)
-                response["source"] = AUDIO_SOURCE
+            if data["source"] != audio_source:
+                print(f"{audio_source} != {data['source']}")
+                response["source"] = audio_source
         response = jsonify(response)
         #response.headers.add("Access-Control-Allow-Origin", "*")
         return response
     else:
-        response = jsonify({"bars": AUDIO_STR, "source": AUDIO_SOURCE, "librosa_data": librosa_data})
+        response = jsonify({"bars": audio_str, "peak": audio_max_last, "source": audio_source})
         # TODO: the actual CORS policy
         response.headers.add("Access-Control-Allow-Origin", "*")
         return response
+    
+
+
+@flask_app.route("/fft_audio", methods=['GET'])
+def fft_audio():
+    """
+    Do a FFT and return the data
+    used for integration with raspberry pi pico
+    this was just an experiment though
+
+    TODO: make sure all useful parts of this function are captured
+    TODO: delete this function
+    """
+    num_motors = 8
+    if len(audio_chunk) > 0:
+        #return audio_chunk.tolist()
+        fft = np.fft.fft(audio_chunk).real
+        chunk_size = fft.size / num_motors
+        avg_chunks = np.abs(np.average(fft.reshape(-1, int(chunk_size)), axis=1))
+        normalized_chunks = avg_chunks # / avg_chunks.size
+        return jsonify({"frequencies": normalized_chunks.tolist()})
+    else:
+        return jsonify({'frequencies': [0, 0, 0, 0, 0, 0, 0, 0]})
+
+
+@flask_app.route("/pico_audio", methods=['GET'])
+def pico_audio():
+    """
+    Do a FFT and return the data
+    used for integration with raspberry pi pico
+    this was just an experiment though
+
+    TODO: make sure all useful parts of this function are captured
+    TODO: delete this function
+    """
+    num_motors = 8
+    if len(audio_chunk) > 0:
+        #return audio_chunk.tolist()
+        fft = np.fft.fft(audio_chunk).real
+        chunk_size = fft.size / num_motors
+        avg_chunks = np.abs(np.average(fft.reshape(-1, int(chunk_size)), axis=1))
+        normalized_chunks = avg_chunks # / avg_chunks.size
+        return jsonify({"motors": normalized_chunks.tolist()})
+    else:
+        return jsonify({'motors': [0, 0, 0, 0, 0, 0, 0, 0]})
+
+if __name__ == "__main__":
+    flask_app.run()
