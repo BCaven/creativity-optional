@@ -64,8 +64,9 @@ while True:
                 #mbars = "-" * int((50 * peak) - (50 * avg))
                 #print("local audio: " + bars + mbars)
                 # latency only works on linux
-                print(f"latency: {mic.latency:4.3f} mic: {current_name[:6]} {response['bars']}")
+                #print(f"latency: {mic.latency:4.3f} mic: {current_name[:6]} {response['bars']}")
         
     except KeyboardInterrupt:
-        print("exiting...")
+        print("exiting...!")
+        
         sys.exit(0)
