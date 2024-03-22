@@ -40,7 +40,7 @@ def translator():
 
                 # Gather audio data in real time
                 data = np.abs(float_audio_data[-20:])
-                print(data)
+                # print(data)
                 avg = np.average(float_audio_data[-20:])
                 peak = np.max(float_audio_data[-20:])
                 
@@ -51,17 +51,19 @@ def translator():
                 #print(f"[data: {data:.2f} avg: {avg:.2f} peak: {peak:.2f}]{'#' * int(peak * 100)}{'-' * int((peak - data) * 100)}")
                 
                 payload = {
-                "avg": float(avg),
-                "peak": float(peak),
-                "data": data.tolist(),
-                "source": "MacOS Device" #Currently hardcoded TODO: Fix
-            }
-            response = requests.post(DOCKER_IP + "audio_in", json=payload).json()
+                    "avg": float(avg),
+                    "peak": float(peak),
+                    "data": data.tolist(),
+                    "source": "MacOS Device" #Currently hardcoded TODO: Fix
+                }
+                print("Sending to " + DOCKER_IP + "audio_in")
+                response = requests.post(DOCKER_IP + "audio_in", json=payload).json()
+                print("return:", response)
             
         except KeyboardInterrupt:
             time.sleep(0.05)
             print("exiting...")
-            os.system("rm runtime/audio_pipe")
+            # os.system("rm runtime/audio_pipe")
             sys.exit(0)
 
 

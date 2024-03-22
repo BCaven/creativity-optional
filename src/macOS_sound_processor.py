@@ -54,7 +54,9 @@ def main():
                 "data": data.tolist(),
                 "source": "MacOS Device" #Currently hardcoded TODO: Fix
             }
+            print("sending...")
             response = requests.post(DOCKER_IP + "audio_in", json=payload).json()
+            # print(response)
 if __name__ == "__main__":
     try:
         main()

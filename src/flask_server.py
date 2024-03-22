@@ -45,8 +45,8 @@ import warnings
 #    return celery_app
 
 
-log = logging.getLogger('werkzeug')
-log.setLevel(logging.ERROR)
+# log = logging.getLogger('werkzeug')
+# log.setLevel(logging.ERROR)
 
 flask_app = Flask(__name__, template_folder='.')
 #flask_app.config.from_pyfile('flask_config.py')
@@ -105,6 +105,7 @@ def audio_in():
     global AUDIO_SAVED_CHUNKS
     if request.method == 'POST':
         data = request.json
+        print(data)
         audio_chunk = np.array(data['data']).reshape(-1)
         rpeak = float(data['peak'])
         ravg = float(data['avg'])
@@ -180,4 +181,4 @@ def pico_audio():
         return jsonify({'motors': [0, 0, 0, 0, 0, 0, 0, 0]})
 
 if __name__ == "__main__":
-    flask_app.run()
+    flask_app.run(host="0.0.0.0")

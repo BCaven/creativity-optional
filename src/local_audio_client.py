@@ -9,7 +9,7 @@ import requests
 DOCKER_IP="http://0.0.0.0:8000/"
 LOOPBACK = False
 
-blocksize = 2048
+blocksize = 256
 samplerate = 48000
 
 mics = sc.all_microphones(include_loopback=LOOPBACK)
