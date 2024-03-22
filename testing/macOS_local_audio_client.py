@@ -5,9 +5,11 @@ import struct
 import numpy as np
 import time
 import requests
+import subprocess
 
 def translator():
     DOCKER_IP="http://0.0.0.0:8000/"
+    print("TRANLATOR IS RUNNING")
     # Open the named pipe for reading
     with open('runtime/audio_pipe', 'rb') as pipe:
         # Number of bytes per sample (32-bit signed integer PCM)
@@ -56,14 +58,14 @@ def translator():
                     "data": data.tolist(),
                     "source": "MacOS Device" #Currently hardcoded TODO: Fix
                 }
-                print("Sending to " + DOCKER_IP + "audio_in")
-                response = requests.post(DOCKER_IP + "audio_in", json=payload).json()
-                print("return:", response)
-            
+                #response = requests.post(DOCKER_IP + "audio_in", json=payload).json()
+                with requests.Session() as session:
+                    xresponse = session.post(DOCKER_IP + "audio_in", json=payload).json()
+
         except KeyboardInterrupt:
             time.sleep(0.05)
             print("exiting...")
-            # os.system("rm runtime/audio_pipe")
+            os.system("rm runtime/audio_pipe")
             sys.exit(0)
 
 
@@ -76,19 +78,23 @@ def main():
     # Make sure the fifo file exists
     if not exists("runtime/audio_pipe"):
         os.system("mkfifo runtime/audio_pipe")
-    
-    translator()
 
-    #pid = os.fork() #TODO: verify that this checks for errors correctly
-    #if pid == -1:
-    #    print("error: falied to fork processes")
-    #    
-    #if pid == 0:
-    #    print("running translator...")
-    #    translator()
-    #else:
-    #    print("collecting audio...")
-    #    os.system(f"""sox -r {rate} -c 2 -b 32 -e signed-integer -t coreaudio "{mic}" -t raw runtime/audio_pipe""")
+    
+    pid = os.fork() #TODO: verify that this checks for errors correctly
+
+    if pid == -1:
+        print("error: falied to fork processes")
+        exit(1)
+        
+    if pid == 0:
+        print("running translator...")
+        translator()
+    else:
+        print("collecting audio...")
+        print(pid)
+        os.system(f"""sox -r {rate} -c 2 -b 32 -e signed-integer -t coreaudio "{mic}" -t raw runtime/audio_pipe""")
+        #subprocess.run(["sox", "-r", str(rate), "-c", "2", "-b", "32", "-e", "signed-integer", "-t", "coreaudio", mic, "-t", "raw", "runtime/audio_pipe"])
+
 
 if __name__ == "__main__":
     main()

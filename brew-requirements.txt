@@ -1,2 +1,1 @@
-sox
 blackhole-2ch
