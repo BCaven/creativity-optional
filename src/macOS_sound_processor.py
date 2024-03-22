@@ -3,6 +3,7 @@ import os
 import struct
 import numpy as np
 import sys
+import requests
 
 def main():
 
@@ -53,7 +54,7 @@ def main():
                 "data": data.tolist(),
                 "source": "MacOS Device" #Currently hardcoded TODO: Fix
             }
-
+            response = requests.post(DOCKER_IP + "audio_in", json=payload).json()
 if __name__ == "__main__":
     try:
         main()
