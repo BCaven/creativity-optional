@@ -8,7 +8,9 @@ install the desired BlackHole driver by running:
 this will automatically install the desired 2 driver version of BlackHole
 
 ## Creativing the Loopback system
-Follow this tutorial from the BlackHole GitHub to set up the Loopback with a Multi-Output Device[https://github.com/ExistentialAudio/BlackHole/wiki/Multi-Output-Device]
+Follow this tutorial from the BlackHole GitHub to set up the Loopback with a Multi-Output Device:
+
+https://github.com/ExistentialAudio/BlackHole/wiki/Multi-Output-Device
 
 ### Building and running your application
 
@@ -21,7 +23,7 @@ In the current build, the Vue server and the local client also need to be run se
 
 `python3 src/macOS_pyaudio.py`
 
-This will run the local client, and you should be able to see the raw data in the docer image.
+This will run the local client, and you should be able to see the raw data in the docker image.
 
 To see a demo of the output from the `vue-frontend` directoy, run the command:
 
@@ -30,8 +32,8 @@ To see a demo of the output from the `vue-frontend` directoy, run the command:
 and go to the localhost link on your browser!
 NOTE: Some browsers will not allow the `vue-frontend` to make the GET requests, meaning that it will not recieve any of the audio data.
 
-# Tested Browsers that don't work without changing settings:
+#### Tested Browsers that don't work without changing settings:
 Safari, Brave
 
-# Tested Browsers that work:
+##### Tested Browsers that work:
 Chrome, Firefox
