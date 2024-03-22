@@ -5,9 +5,9 @@ import numpy as np
 import sys
 import requests
 
-def main():
+DOCKER_IP="http://0.0.0.0:8000/"
 
-    DOCKER_IP="http://0.0.0.0:8000/"
+def main():
 
     # Open the named pipe for reading
     with sys.stdin.buffer.read() as pipe:

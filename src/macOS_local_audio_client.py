@@ -77,18 +77,18 @@ def main():
     if not exists("runtime/audio_pipe"):
         os.system("mkfifo runtime/audio_pipe")
     
-    #translator()
+    translator()
 
-    pid = os.fork() #TODO: verify that this checks for errors correctly
-    if pid == -1:
-        print("error: falied to fork processes")
-        
-    if pid == 0:
-        print("running translator...")
-        translator()
-    else:
-        print("collecting audio...")
-        os.system(f"""sox -r {rate} -c 2 -b 32 -e signed-integer -t coreaudio "{mic}" -t raw runtime/audio_pipe""")
+    #pid = os.fork() #TODO: verify that this checks for errors correctly
+    #if pid == -1:
+    #    print("error: falied to fork processes")
+    #    
+    #if pid == 0:
+    #    print("running translator...")
+    #    translator()
+    #else:
+    #    print("collecting audio...")
+    #    os.system(f"""sox -r {rate} -c 2 -b 32 -e signed-integer -t coreaudio "{mic}" -t raw runtime/audio_pipe""")
 
 if __name__ == "__main__":
     main()
