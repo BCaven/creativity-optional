@@ -1,6 +1,11 @@
 ### Setup on MacOS
 The MacOS version of CO usees PyAudio (because SoundCard only works on Linux and Windows RIP) The dowside of this is that PyAudio doesn't natively support loopback, so we have to get it ourselves. Our current solution is to use BlackHole, a popular loopback driver
 
+## Setting up the virtual environment
+To setup the virtual environment on MacOS, run the following command:
+
+`source .venv/bin/activate`
+
 ## Installing BlackHole
 install the desired BlackHole driver by running:
 `./brew-installer.sh`
@@ -19,7 +24,7 @@ When you're ready, start your application by running:
 
 Your application will be available at http://localhost:8000.
 
-In the current build, the Vue server and the local client also need to be run seperately as well. In a seperate window, run the following:
+In the current build, the Vue server and the local client also need to be run seperately as well. In a seperate window, for the local client, run the following:
 
 `python3 src/macOS_pyaudio.py`
 
