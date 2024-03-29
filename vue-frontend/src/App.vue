@@ -1,6 +1,10 @@
 <script setup>
 import { onMounted, onBeforeUnmount, ref } from "vue";
-import light_example_scene from "./components/light_example_scene.vue";
+import pitch_shift_scene from "./components/pitch_shift_scene.vue";
+// import hsl_shift_scene from "./components/hsl_shift_scene.vue";
+// import light_example_scene from "./components/light_example_scene.vue";
+// import fft_example_scene from "./components/fft_example_scene.vue";
+// import basic_3d_scene from "./components/basic_3d_scene.vue";
 
 
 // use multicast or something to find this server route
@@ -8,7 +12,7 @@ import light_example_scene from "./components/light_example_scene.vue";
 // and never have to worry about it again
 // for testing, I am running this outside of the docker container
 // look into service workers as a way to automate the process of receiving data from the server
-const server_route = "0.0.0.0:8000";
+const server_route = "localhost:8000";
 let sound_bar = ref("");
 let sound_volume = ref(0);
 let fft = ref([]);
@@ -94,7 +98,12 @@ onBeforeUnmount(() => {
       ></v-combobox>-->
     <v-progress-linear max=1 model-value=0 v-model="sound_volume" :height="12"></v-progress-linear>
 
-    <light_example_scene :volume="sound_volume"/>
+    <!-- <light_example_scene :volume="sound_volume"/> -->
+    <!-- <fft_example_scene :volume="sound_volume"/> -->
+    <!-- <basic_3d_scene :volume="sound_volume"/> -->
+    <!-- <hsl_shift_scene :volume="sound_volume"/> -->
+    <pitch_shift_scene :volume="sound_volume"/>
+
   </main>
 </template>
 

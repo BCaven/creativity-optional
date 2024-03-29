@@ -6,11 +6,11 @@ import requests
 
 # BUG: fuzzy search grabs loopback devices when given the name of the actual device (non-loopback)
 
-DOCKER_IP="http://0.0.0.0:8000/"
+DOCKER_IP="http://localhost:8000/"
 LOOPBACK = False
 
 blocksize = 2048
-samplerate = 48000
+samplerate = 44100
 
 mics = sc.all_microphones(include_loopback=LOOPBACK)
 new_mic = sc.default_microphone().name
@@ -64,7 +64,7 @@ while True:
                 #mbars = "-" * int((50 * peak) - (50 * avg))
                 #print("local audio: " + bars + mbars)
                 # latency only works on linux
-                print(f"latency: {mic.latency:4.3f} mic: {current_name[:6]} {response['bars']}")
+                # print(f"latency: {mic.latency:4.3f} mic: {current_name[:6]} {response['bars']}")
         
     except KeyboardInterrupt:
         print("exiting...")
