@@ -6,7 +6,7 @@ import requests
 
 # BUG: fuzzy search grabs loopback devices when given the name of the actual device (non-loopback)
 
-DOCKER_IP="http://0.0.0.0:8000/"
+DOCKER_IP="http://localhost:8000/"
 LOOPBACK = False
 
 blocksize = 2048

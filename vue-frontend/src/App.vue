@@ -8,7 +8,7 @@ import light_example_scene from "./components/light_example_scene.vue";
 // and never have to worry about it again
 // for testing, I am running this outside of the docker container
 // look into service workers as a way to automate the process of receiving data from the server
-const server_route = "0.0.0.0:8000";
+const server_route = "localhost:8000";
 let sound_bar = ref("");
 let sound_volume = ref(0);
 let fft = ref([]);
