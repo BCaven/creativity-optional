@@ -51,7 +51,7 @@
       animate: function() {
         requestAnimationFrame(this.animate);
         let old_y = this.cube.position.y;
-        let desired_y = this.volume * 5;
+        let desired_y = this.volume * 2;
         if (distance(desired_y, old_y) > 0.02) {
           if (desired_y > old_y) {
             this.cube.position.y += distance(desired_y, old_y) / 10;
