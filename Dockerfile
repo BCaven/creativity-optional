@@ -46,25 +46,30 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 
 # Copy the source code into the container.
-COPY . .
+COPY src/ src/
+COPY vue-frontend/ /vue-frontend/
 
 # TODO: in the final product, this will be built beforehand, 
 # and the files will already be in src/
 # so these lines will be obsolete
 # remember to also adjust the dockerignore accordingly
 # build vue site
-RUN --mount=type=cache,target=/root/.cache/vue-npm \
-    --mount=type=bind,source=vue-frontend/package.json,target=vue-frontend/package.json \
-    npm --prefix vue-frontend/ install
+WORKDIR /vue-frontend/
 RUN --mount=type=cache,target=/root/.cache/vite-npm \
     --mount=type=bind,source=vue-frontend/package.json,target=vue-frontend/package.json \
     npm i vite -g
+RUN --mount=type=cache,target=/root/.cache/viteplugin-npm \
+    --mount=type=bind,source=vue-frontend/package.json,target=vue-frontend/package.json \
+    npm i @vitejs/plugin-vue -g
+RUN --mount=type=cache,target=/root/.cache/vue-npm \
+    --mount=type=bind,source=vue-frontend/package.json,target=vue-frontend/package.json \
+    npm install
 RUN --mount=type=cache,target=/root/.cache/vue-install \
     --mount=type=bind,source=vue-frontend/,target=vue-frontend/ \
-    npm --prefix vue-frontend/ run build
+    npm run build
 
 # Switch to the non-privileged user to run the application.
-USER appuser
+#USER appuser
 
 
 
