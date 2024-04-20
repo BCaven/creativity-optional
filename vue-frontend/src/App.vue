@@ -1,98 +1,72 @@
 <script setup>
+/*
+Source for the front-end served by the flask server
+
+Tasks:
+[DONE] websocket connection
+[TODO] import initial node graph
+[TODO] support for general keys
+[TODO] rearrange the threejs scene
+[TODO] import models into the threejs scene
+[TODO] typescript so future developers do not hate us
+*/
+
+
 import { onMounted, onBeforeUnmount, ref } from "vue";
+import { io }  from "socket.io-client";
+
 import light_example_scene from "./components/light_example_scene.vue";
 
 
-// use multicast or something to find this server route
-// eventually this page will be the UI for the server in the docker container - so we can just do localhost:container_port
-// and never have to worry about it again
-// for testing, I am running this outside of the docker container
-// look into service workers as a way to automate the process of receiving data from the server
-const server_route = "0.0.0.0:8000";
-let sound_bar = ref("");
-let sound_volume = ref(0);
-let fft = ref([]);
-let selected_item = ref({"id": "", "name": ""});
-let sound_options = ref([]);
-let selected_input = ref("");
-const timer = ref();
+console.log(location);
 
-async function getSoundOptions() {
-  // get all input options from local controller
-  console.log("getting sound options from server");
-  const response = await fetch("http://" + server_route + "/audio_source");
+// do not need to specify the location because this page is getting served by the websocket server
+const socket = io();
+
+let server_data = ref(new Map());
+
+// socket listeners
+// we mostly just need to listen for new data - not partictularly concerned with sending information back at the moment
+function handleIncomingData(event) {
+  console.log("message from server: ", event);
+}
+socket.on("incoming data", handleIncomingData);
+socket.on("message", handleIncomingData);
+socket.on("connect", () => console.log("websocket connected!"));
+socket.on("disconnect", () => console.log("websocket disconnected"));
+
+/**
+ * getKey
+ * @param {String} key 
+ * 
+ * get data for a specific key from the server and update it's value
+ */
+async function getKey(key) {
+  // get data for a specific key
+  const response = await fetch("https://" + server_route + "/general_keys/" + key);
   let r = await response.json();
-  // update the list of mics and selected mic from the server
-  console.log(r.mics)
-  sound_options.value = r.mics;
-  selected_input.value = r.source;
+  // make sure we got a valid response
+  // update that key's data
+  server_data.value.set(key, r[key]);
 }
-async function updateSoundOptions() {
-  selected_input.value = selected_item.value.name;
-  console.log("sending new sound source to server");
-  const response = await fetch(
-    "http://" + server_route + "/audio_source",
-    {
-      method: "POST",
-      body: JSON.stringify(selected_input)
-    }
-  );
+/**
+ * getAllKeys
+ * 
+ * fill in every known key with an empty value
+ */
+async function getAllKeys() {
+  const response = await fetch("https://" + server_route + "/general_keys");
   let r = await response.json();
+  r.keys().forEach(key => server_data.value.set(key, ''));
 }
 
-async function updateSoundData() {
-  // get the new sound data
-  // the sound "bar" is just for testing visualization
-  const response = await fetch("http://" + server_route + "/audio_in");
-  //console.log(response.json());
-  let r = await response.json();
-  sound_bar.value = r.bars;
-  sound_volume.value = r.peak;
-  //console.log(sound_bar.value);
-}
-async function updateFFTData() {
-  const response = await fetch("http://" + server_route + "/fft_audio");
-  let r = await response.json();
-  fft.value = r['frequencies'];
-}
-
-function countDownFunc () {
-  updateSoundData();
-  updateFFTData();
-}
-
-// Instantiate
-onMounted(() => {
-  // could probably make this refresh faster given a better computer - I am testing this on my garbage laptop
-  timer.value = setInterval(() => {
-    countDownFunc();
-  }, 60); // ~15 times every second
-});
-
-// Clean up
-onBeforeUnmount(() => {
-  timer.value = null;
-});
 
 </script>
 
 <template>
   <main>
-    <v-progress-linear max=1 model-value=0 v-model="sound_volume" :height="12"></v-progress-linear>
-    <v-btn @click="getSoundOptions">Get Sound Options</v-btn>
-    <p> Audio Device: {{ selected_input }}</p>
-    <p> Current Audio: {{ sound_bar }}</p>
-    <p> Current Volume: {{ sound_volume }}</p>
-    <!--<v-combobox
-      label="audio input"
-      :items="sound_options"
-      v-model="selected_item"
-      item-text="name"
-      single-line
-      return-object
-      ></v-combobox>-->
 
-    <light_example_scene :volume="sound_volume"/>
+
   </main>
 </template>
 
