@@ -16,8 +16,7 @@ src/static/
 src/outputscene/
 
 # npm
-package-lock.json
-vue-frontend/package-lock.json
+*/package-lock.json
 
 
 # Logs
