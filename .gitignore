@@ -16,6 +16,7 @@ src/static/
 
 # npm
 package-lock.json
+vue-frontend/package-lock.json
 
 
 # Logs
