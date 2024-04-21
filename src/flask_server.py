@@ -153,7 +153,7 @@ def general_in():
         flask_app.logger.info(f"Updating general data: {key}: {data[key]}")
         general_data[key] = data[key]
         # send new data over to the front-end
-        emit('incoming data', data)
+        socketio.emit('incoming_data', data)
     response = {"message": f"received data for {key in data if key != 'type' else ''}"}
     return jsonify(response)
 

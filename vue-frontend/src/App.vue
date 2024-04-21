@@ -27,44 +27,37 @@ let server_data = ref(new Map());
 
 // socket listeners
 // we mostly just need to listen for new data - not partictularly concerned with sending information back at the moment
-function handleIncomingData(event) {
-  console.log("message from server: ", event);
+function handleIncomingData(data) {
+  console.log("message from server: ", data);
+  for (const prop in data) {
+    if (prop != 'type') {
+      server_data.value.set(prop, data[prop]);
+      console.log("server_data: ", server_data.value);
+    }
+  }
 }
-socket.on("incoming data", handleIncomingData);
+socket.on("incoming_data", handleIncomingData);
 socket.on("message", handleIncomingData);
 socket.on("connect", () => console.log("websocket connected!"));
 socket.on("disconnect", () => console.log("websocket disconnected"));
 
-/**
- * getKey
- * @param {String} key 
- * 
- * get data for a specific key from the server and update it's value
- */
-async function getKey(key) {
-  // get data for a specific key
-  const response = await fetch("https://" + server_route + "/general_keys/" + key);
-  let r = await response.json();
-  // make sure we got a valid response
-  // update that key's data
-  server_data.value.set(key, r[key]);
-}
-/**
- * getAllKeys
- * 
- * fill in every known key with an empty value
- */
-async function getAllKeys() {
-  const response = await fetch("https://" + server_route + "/general_keys");
-  let r = await response.json();
-  r.keys().forEach(key => server_data.value.set(key, ''));
-}
-
-
 </script>
 
 <template>
+  <!--
+    Start page: node editor with threejs scene in the background
+  -->
   <main>
+    <h1>Incoming data:</h1>
+    <v-list lines="one">
+      <v-list-item
+        v-for="item in server_data"
+        :key="item[0]"
+        :title="'Item ' + item[0] + ':'"
+      >
+        {{ item[1] }}
+      </v-list-item>
+    </v-list>
 
 
   </main>
