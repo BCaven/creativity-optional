@@ -76,7 +76,8 @@ def process_command(command) -> str:
     TODO: shlex!
     TODO: test on windows
     """
-    assert type(command) in [list, str], f"invalid command type {type(command)} only str and list are allowed"
+    if not isinstance(command, (str, list)):
+    raise TypeError(f"invalid command type {type(command)}: only str and list are allowed")
     logging.debug(f"command before processing: {command}")
     processed_command = command
     if type(command) == str:
