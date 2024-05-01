@@ -13,9 +13,10 @@ __pycache__/
 src/index.html
 src/favicon.ico
 src/static/
+src/outputscene/
 
 # npm
-package-lock.json
+*/package-lock.json
 
 
 # Logs

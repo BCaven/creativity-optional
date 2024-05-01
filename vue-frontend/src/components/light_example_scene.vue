@@ -13,8 +13,7 @@
       }
     },
     props: {
-        volume: Number,
-        fft: Array
+        volume: Number
     },
     methods: {
       init: function() {
@@ -33,10 +32,11 @@
         const geometry = new THREE.BoxGeometry(1, 1, 1);
         const material = new THREE.MeshStandardMaterial( { color: 0xffffff, roughness: 0, metalness: 0 } );
         this.cube = new THREE.Mesh(geometry, material);
+        this.static_cube = new THREE.Mesh(geometry, material);
         this.scene.add(this.cube);
-
+        this.scene.add(this.static_cube);
         // lights
-        this.ambientLight = new THREE.AmbientLight(0x0000ff, 0.5)
+        this.ambientLight = new THREE.AmbientLight(0x0000ff, 0.6)
         this.scene.add(this.ambientLight)
         this.light = new THREE.RectAreaLight( 0xff0000, 5, 4, 10 );
         this.light.position.set(0, 0, 3)
@@ -77,7 +77,7 @@
         } else if (this.brightness < 0) {
             this.brightness = 0;
         }
-        this.light.color.setHSL(1, 1, this.brightness); 
+        this.light.color.setHSL(1, 1, this.brightness + 0.2); 
         this.renderer.render(this.scene, this.camera);
         //console.log("animating...");
       }

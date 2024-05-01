@@ -1,98 +1,77 @@
 <script setup>
+/*
+Source for the front-end served by the flask server
+
+Tasks:
+[DONE] websocket connection
+[TODO] import initial node graph
+[TODO] support for general keys
+[TODO] rearrange the threejs scene
+[TODO] import models into the threejs scene
+[TODO] typescript so future developers do not hate us
+*/
+
+
 import { onMounted, onBeforeUnmount, ref } from "vue";
+import { io }  from "socket.io-client";
+
 import light_example_scene from "./components/light_example_scene.vue";
+import basic_3d_scene from "./components/basic_3d_scene.vue";
 
 
-// use multicast or something to find this server route
-// eventually this page will be the UI for the server in the docker container - so we can just do localhost:container_port
-// and never have to worry about it again
-// for testing, I am running this outside of the docker container
-// look into service workers as a way to automate the process of receiving data from the server
-const server_route = "0.0.0.0:8000";
-let sound_bar = ref("");
-let sound_volume = ref(0);
-let fft = ref([]);
-let selected_item = ref({"id": "", "name": ""});
-let sound_options = ref([]);
-let selected_input = ref("");
-const timer = ref();
+console.log(location);
 
-async function getSoundOptions() {
-  // get all input options from local controller
-  console.log("getting sound options from server");
-  const response = await fetch("http://" + server_route + "/audio_source");
-  let r = await response.json();
-  // update the list of mics and selected mic from the server
-  console.log(r.mics)
-  sound_options.value = r.mics;
-  selected_input.value = r.source;
-}
-async function updateSoundOptions() {
-  selected_input.value = selected_item.value.name;
-  console.log("sending new sound source to server");
-  const response = await fetch(
-    "http://" + server_route + "/audio_source",
-    {
-      method: "POST",
-      body: JSON.stringify(selected_input)
+// do not need to specify the location because this page is getting served by the websocket server
+const socket = io();
+
+let server_data = ref(new Map());
+// audio data being its own thing is just to have backwards compatability with old scenes
+// eventually it will be removed (as will hardcoded custom scenes) but for now, it is kept in
+let audio_max = ref(0);
+// socket listeners
+// we mostly just need to listen for new data - not partictularly concerned with sending information back at the moment
+function handleIncomingData(data) {
+  //console.log("message from server: ", data);
+  for (const prop in data) {
+    if (prop != 'type') {
+      server_data.value.set(prop, data[prop]);
+      //console.log("server_data: ", server_data.value);
     }
-  );
-  let r = await response.json();
+  }
 }
-
-async function updateSoundData() {
-  // get the new sound data
-  // the sound "bar" is just for testing visualization
-  const response = await fetch("http://" + server_route + "/audio_in");
-  //console.log(response.json());
-  let r = await response.json();
-  sound_bar.value = r.bars;
-  sound_volume.value = r.peak;
-  //console.log(sound_bar.value);
+function handleAudioData(data) {
+  //console.log("audio data: ", data);
+  audio_max.value = Number(data['peak']);
+  server_data.value.set('audio_max', data['peak']);
 }
-async function updateFFTData() {
-  const response = await fetch("http://" + server_route + "/fft_audio");
-  let r = await response.json();
-  fft.value = r['frequencies'];
-}
-
-function countDownFunc () {
-  updateSoundData();
-  updateFFTData();
-}
-
-// Instantiate
-onMounted(() => {
-  // could probably make this refresh faster given a better computer - I am testing this on my garbage laptop
-  timer.value = setInterval(() => {
-    countDownFunc();
-  }, 60); // ~15 times every second
-});
-
-// Clean up
-onBeforeUnmount(() => {
-  timer.value = null;
-});
+socket.on("incoming_data", handleIncomingData);
+socket.on("audio_data", handleAudioData);
+socket.on("message", handleIncomingData);
+socket.on("connect", () => console.log("websocket connected!"));
+socket.on("disconnect", () => console.log("websocket disconnected"));
 
 </script>
 
 <template>
+  <!--
+    Start page: node editor with threejs scene in the background
+  -->
   <main>
-    <v-progress-linear max=1 model-value=0 v-model="sound_volume" :height="12"></v-progress-linear>
-    <v-btn @click="getSoundOptions">Get Sound Options</v-btn>
-    <p> Audio Device: {{ selected_input }}</p>
-    <p> Current Audio: {{ sound_bar }}</p>
-    <p> Current Volume: {{ sound_volume }}</p>
-    <!--<v-combobox
-      label="audio input"
-      :items="sound_options"
-      v-model="selected_item"
-      item-text="name"
-      single-line
-      return-object
-      ></v-combobox>-->
+    <h1>Incoming data:</h1>
+    <v-list lines="one">
+      <v-list-item
+        v-for="item in server_data"
+        :key="item[0]"
+        :title="'Item ' + item[0] + ':'"
+      >
+        {{ item[1] }}
+      </v-list-item>
+      
+    </v-list>
+    <!--<light_example_scene volume:audio_max></light_example_scene>
+    -->
+    <basic_3d_scene :volume="audio_max" :general_inputs="server_data"/>
 
-    <light_example_scene :volume="sound_volume"/>
   </main>
 </template>
 

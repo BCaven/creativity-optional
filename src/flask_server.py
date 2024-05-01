@@ -22,9 +22,11 @@ Tasks:
 [TODO] add route to send available keys to frontend
 [TODO] clean up audio handling
 [TODO] deal with keep-alive connections
+[TODO] websockets
 
 """
 from flask import Flask, render_template, request, jsonify, abort
+from flask_socketio import SocketIO, emit
 from werkzeug.serving import WSGIRequestHandler
 import numpy as np
 import logging
@@ -32,6 +34,7 @@ import logging
 
 flask_app = Flask(__name__, template_folder='.')
 flask_app.logger.setLevel(logging.DEBUG)
+socketio = SocketIO(flask_app)
 
 audio_str = ""
 audio_raw_max = 0
@@ -43,6 +46,7 @@ audio_chunk = []
 # TODO: gracefully handle client settings
 change_settings = False
 client_audio_settings = dict()
+json_settings_path = 'node-settings.json'
 
 # general data
 general_data = dict()
@@ -91,7 +95,6 @@ def audio_in():
     """
     # TODO: change this later, it is just for testing and the MVP apparently
     global audio_str
-    global audio_source
     global audio_chunk
     global audio_raw_max
     global audio_last
@@ -116,13 +119,14 @@ def audio_in():
         mbars = "-" * int((50 * rpeak) - (50 * ravg))
         audio_str = bars + mbars
         response = {"bars": audio_str}
+        socketio.emit('audio_data', {"bars": audio_str, "peak": audio_max_last})
 
         if change_settings:
             response['setting_change'] = change_settings
             change_settings = False
         return jsonify(response)
     else:
-        response = jsonify({"bars": audio_str, "peak": audio_max_last, "source": audio_source})
+        response = jsonify({"bars": audio_str, "peak": audio_max_last})
         # TODO: the actual CORS policy
         response.headers.add("Access-Control-Allow-Origin", "*")
         return response
@@ -140,14 +144,17 @@ def general_in():
     all data is assumed to be a range between 0 and 100
     """
     global general_data
-    assert request.method == 'POST', "the route /general_in only supports POSTs"
     data = request.json
-    assert 'type' in data, "request to /general_in did not specify the data type"
+    # TODO: I think types will be removed later, so when that happens this check can get removed too
+    if 'type' not in data:
+        flask_app.logger.warning("request to /general_in did not specify the data type")
     for key in data:
         if key == 'type':
             continue
         flask_app.logger.info(f"Updating general data: {key}: {data[key]}")
         general_data[key] = data[key]
+        # send new data over to the front-end
+        socketio.emit('incoming_data', data)
     response = {"message": f"received data for {key in data if key != 'type' else ''}"}
     return jsonify(response)
 
@@ -173,6 +180,21 @@ def get_key(key):
         abort(404)
     
     return jsonify(response)
+
+@flask_app.route("/page_settings", methods=['GET'])
+def send_initial_settings():
+    """
+    Send the json settings file to the front-end
+
+    This should be called once on startup
+    """
+    response = {}
+    # load json
+    with open(json_settings_path, 'r') as f:
+        pass
+    # send json
+    return jsonify(response)
+
     
 @flask_app.route("/fft_audio", methods=['GET'])
 def fft_audio():
@@ -222,8 +244,30 @@ def page_not_found(error):
     May someone please make this
     """
     return "page not found", 404
+
+# sockets!
+@socketio.on("message")
+def handle_message(data):
+    """
+    use a websocket to talk to the frontend
+    """
+    flask_app.logger.info(f"recieved {data}")
+
+@socketio.on('connect')
+def connect():
+    flask_app.logger.info("Someone connected to the websocket!")
+    emit('my response', {'data': 'Connected'})
+
     
 
 if __name__ == "__main__":
+    """
+    Start the server
+
+
+    NOTE: this is a development server and will need to be changed when rolling out
+    using this for development only (although who knows, if you see this in the next release, plz submit
+    a pr to fix it :D)
+    """
     WSGIRequestHandler.protocol_version = "HTTP/1.1"
-    flask_app.run()
+    socketio.run(flask_app, allow_unsafe_werkzeug=True, host='0.0.0.0', port=8000)

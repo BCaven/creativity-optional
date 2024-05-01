@@ -1,10 +1,9 @@
 # syntax=docker/dockerfile:1
 
-# Comments are provided throughout this file to help you get started.
-# If you need more help, visit the Dockerfile reference guide at
-# https://docs.docker.com/go/dockerfile-reference/
+# TODO: clean this up so it doesnt have a bunch of weird paths
 
-# Want to help us make this template better? Share your feedback here: https://forms.gle/ybq9Krt8jtBL3iCk7
+# reference for new people
+# https://docs.docker.com/go/dockerfile-reference/
 
 ARG PYTHON_VERSION=3.11.4
 FROM python:${PYTHON_VERSION}-slim as base
@@ -46,22 +45,28 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 
 # Copy the source code into the container.
-COPY . .
+COPY src/ src/
 
-# TODO: in the final product, this will be built beforehand, 
+# copy the front-end source over
+# NOTE: this is the development server!
+COPY vue-frontend/ vue-frontend/
+# for release builds the frontend will be built in advance so the `vue-frontend/` folder will not actually be
+# in the docker image
+
+# TODO: make sure the files get sent to the right spot
+# NOTE: in the final product, this will be built beforehand, 
 # and the files will already be in src/
-# so these lines will be obsolete
-# remember to also adjust the dockerignore accordingly
 # build vue site
+# change the working dir so npm does not get confused
+WORKDIR /app/vue-frontend
 RUN --mount=type=cache,target=/root/.cache/vue-npm \
     --mount=type=bind,source=vue-frontend/package.json,target=vue-frontend/package.json \
-    npm --prefix vue-frontend/ install
-RUN --mount=type=cache,target=/root/.cache/vite-npm \
-    --mount=type=bind,source=vue-frontend/package.json,target=vue-frontend/package.json \
-    npm i vite -g
+    npm install
 RUN --mount=type=cache,target=/root/.cache/vue-install \
     --mount=type=bind,source=vue-frontend/,target=vue-frontend/ \
-    npm --prefix vue-frontend/ run build
+    npm run build
+
+WORKDIR /app
 
 # Switch to the non-privileged user to run the application.
 USER appuser
@@ -72,5 +77,6 @@ USER appuser
 EXPOSE 8000
 
 # Run the application.
-CMD flask --app src/flask_server run -p 8000 -h 0.0.0.0 --debug
+# TODO: change this to a production server (when the time comes)
+CMD python3 src/flask_server.py
     
