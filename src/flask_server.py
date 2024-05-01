@@ -95,7 +95,6 @@ def audio_in():
     """
     # TODO: change this later, it is just for testing and the MVP apparently
     global audio_str
-    global audio_source
     global audio_chunk
     global audio_raw_max
     global audio_last
@@ -120,13 +119,14 @@ def audio_in():
         mbars = "-" * int((50 * rpeak) - (50 * ravg))
         audio_str = bars + mbars
         response = {"bars": audio_str}
+        socketio.emit('audio_data', {"bars": audio_str, "peak": audio_max_last})
 
         if change_settings:
             response['setting_change'] = change_settings
             change_settings = False
         return jsonify(response)
     else:
-        response = jsonify({"bars": audio_str, "peak": audio_max_last, "source": audio_source})
+        response = jsonify({"bars": audio_str, "peak": audio_max_last})
         # TODO: the actual CORS policy
         response.headers.add("Access-Control-Allow-Origin", "*")
         return response
@@ -144,9 +144,10 @@ def general_in():
     all data is assumed to be a range between 0 and 100
     """
     global general_data
-    assert request.method == 'POST', "the route /general_in only supports POSTs"
     data = request.json
-    assert 'type' in data, "request to /general_in did not specify the data type"
+    # TODO: I think types will be removed later, so when that happens this check can get removed too
+    if 'type' not in data:
+        flask_app.logger.warning("request to /general_in did not specify the data type")
     for key in data:
         if key == 'type':
             continue

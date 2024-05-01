@@ -96,7 +96,7 @@ def send_audio(chosen_mic, ip: str, settings: dict) -> bool:
                     "data": data.tolist(),
                 }
                 try:
-                    response = session.post(ip + "audio_in", json=payload).json()
+                    response = session.post(ip + "audio_in", json=payload)
                 except requests.exceptions.ConnectionError:
                     logging.error("server did not respond, exiting...")
                     return False

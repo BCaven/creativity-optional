@@ -30,35 +30,59 @@
         document.body.appendChild(this.renderer.domElement);
   
         const geometry = new THREE.BoxGeometry(1, 1, 1);
-        const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-        this.cube = new THREE.Mesh(geometry, material);
-        this.scene.add(this.cube);
-  
+        this.activeMat = new THREE.MeshBasicMaterial({color: 0xff00ff});
+        this.inactiveMat = new THREE.MeshBasicMaterial({color: 0x101040});
+        this.cubes = [];
+        for (let i = -5; i < 5; i++) {
+          this.cubes.push(new THREE.Mesh(geometry, this.inactiveMat));
+          this.cubes[i + 5].position.x = i * 1.1;
+          this.scene.add(this.cubes[i + 5]);
+        }
+        this.currentCube = 0;
+        
         this.camera.position.z = 5;
   
         const animate = function() {}
       },
       animate: function() {
         requestAnimationFrame(this.animate);
-        let old_x = this.cube.position.x;
-        if (distance(this.volume, old_x) > 0.5) {
-          if (this.volume > old_x) {
-            this.cube.position.x += 0.1;
-          } else if (this.volume < old_x) {
-            this.cube.position.x -= 0.1;
+        for (let i = 0; i < 10; i++) {
+          this.cubes[i].rotation.x += 0.01;
+          if (i == this.currentCube) {
+            this.cubes[i].material = this.activeMat;
+          } else {
+            this.cubes[i].material = this.inactiveMat;
           }
         }
-        this.cube.rotation.x += 0.01;
-        this.cube.rotation.y += 0.01;
-        //this.cube.position.x = this.volume;
-  
+        let old_y = this.cubes[this.currentCube].position.y;
+        let desired_y = this.volume * 10;
+        //console.log("volume: ", this.volume);
+        //console.log("desired y: ", desired_y);
+        if (distance(desired_y, old_y) > 0.02) {
+          if (desired_y > old_y) {
+            this.cubes[this.currentCube].position.y += distance(desired_y, old_y) / 10;
+          } else {
+            this.cubes[this.currentCube].position.y -= distance(desired_y, old_y) / 10;
+          }
+        }
+        
+        
+        //console.log("current cube: ", this.currentCube);
         this.renderer.render(this.scene, this.camera);
         //console.log("animating...");
       }
     },
     mounted() {
       this.init();
+      this.timer = setInterval(() => {
+        this.currentCube += 1;
+        if (this.currentCube > this.cubes.length - 1) {
+          this.currentCube = 0;
+        } 
+      }, 1000);
+      
       this.animate();
+      
     }
   }
 </script>

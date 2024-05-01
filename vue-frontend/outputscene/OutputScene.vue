@@ -2,52 +2,44 @@
 // TODO: fix formatting bug where threejs canvas does not take up the entire screen
 
 import { onMounted, onBeforeUnmount, ref } from "vue";
-import light_example_scene from "../src/components/light_example_scene.vue";
+import { io }  from "socket.io-client";
 
-// look into service workers as a way to automate the process of receiving data from the server
-const server_route = "0.0.0.0:8000";
-let sound_bar = ref("");
-let sound_volume = ref(0);
-let fft = ref([]);
-const timer = ref();
+console.log(location);
 
-async function updateSoundData() {
-  // get the new sound data
-  const response = await fetch("http://" + server_route + "/audio_in");
-  //console.log(response.json());
-  let r = await response.json();
-  sound_volume.value = r.peak;
-  //console.log(sound_bar.value);
+// do not need to specify the location because this page is getting served by the websocket server
+const socket = io();
+
+let server_data = ref(new Map());
+// audio data being its own thing is just to have backwards compatability with old scenes
+// eventually it will be removed (as will hardcoded custom scenes) but for now, it is kept in
+let audio_max = ref(0);
+// socket listeners
+// we mostly just need to listen for new data - not partictularly concerned with sending information back at the moment
+function handleIncomingData(data) {
+  //console.log("message from server: ", data);
+  for (const prop in data) {
+    if (prop != 'type') {
+      server_data.value.set(prop, data[prop]);
+      //console.log("server_data: ", server_data.value);
+    }
+  }
 }
-async function updateFFTData() {
-  const response = await fetch("http://" + server_route + "/fft_audio");
-  let r = await response.json();
-  fft.value = r['frequencies'];
+function handleAudioData(data) {
+  //console.log("audio data: ", data);
+  audio_max.value = Number(data['peak']);
+  server_data.value.set('audio_max', data['peak']);
 }
-
-function countDownFunc () {
-  updateSoundData();
-  updateFFTData();
-}
-
-// Instantiate
-onMounted(() => {
-  // could probably make this refresh faster given a better computer - I am testing this on my garbage laptop
-  timer.value = setInterval(() => {
-    countDownFunc();
-  }, 60); // ~15 times every second
-});
-
-// Clean up
-onBeforeUnmount(() => {
-  timer.value = null;
-});
+socket.on("incoming_data", handleIncomingData);
+socket.on("audio_data", handleAudioData);
+socket.on("message", handleIncomingData);
+socket.on("connect", () => console.log("websocket connected!"));
+socket.on("disconnect", () => console.log("websocket disconnected"));
 
 </script>
 
 <template>
   <main>
-    <light_example_scene :volume="sound_volume"/>
+    <basic_3d_scene :volume="sound_volume"/>
   </main>
 </template>
 
