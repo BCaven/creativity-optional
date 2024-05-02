@@ -10,10 +10,9 @@ __pycache__/
 *.pem
 
 # vite build
-src/index.html
+src/*.html
 src/favicon.ico
 src/static/
-src/outputscene/
 
 # npm
 */package-lock.json

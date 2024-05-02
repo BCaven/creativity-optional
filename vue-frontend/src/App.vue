@@ -34,7 +34,7 @@ function handleIncomingData(data) {
   //console.log("message from server: ", data);
   for (const prop in data) {
     if (prop != 'type') {
-      server_data.value.set(prop, data[prop]);
+      server_data.value.set(prop, Number(data[prop]));
       //console.log("server_data: ", server_data.value);
     }
   }

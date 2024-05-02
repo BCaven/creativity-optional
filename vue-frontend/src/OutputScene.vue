@@ -3,6 +3,7 @@
 
 import { onMounted, onBeforeUnmount, ref } from "vue";
 import { io }  from "socket.io-client";
+import basic_3d_scene from "./components/basic_3d_scene.vue";
 
 console.log(location);
 
@@ -39,12 +40,15 @@ socket.on("disconnect", () => console.log("websocket disconnected"));
 
 <template>
   <main>
-    <basic_3d_scene :volume="sound_volume"/>
+    <basic_3d_scene :volume="audio_max" :general_inputs="server_data"/>
   </main>
 </template>
 
 <style scoped>
-header {
-  line-height: 1.5;
+html {
+  overflow-y: hidden;
+}
+body {
+  overflow: hidden;
 }
 </style>

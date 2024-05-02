@@ -220,7 +220,7 @@ def output_page():
     Display just the threejs scene.
     This is how other programs get our output (as html)
     """
-    return render_template("outputscene/outputscene.html")
+    return render_template("outputscene.html")
 
 @flask_app.route("/output/stream", methods=['GET'])
 def output_stream():

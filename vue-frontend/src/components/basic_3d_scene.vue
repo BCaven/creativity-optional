@@ -26,6 +26,7 @@
         );
   
         this.renderer = new THREE.WebGLRenderer();
+        // TODO: find the real solution for this work around later (removing scroll bar)
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(this.renderer.domElement);
   
@@ -88,8 +89,9 @@
 </script>
 
 <style>
-#container {
+canvas {
     width: 100%;
     height: 100%;
+    display: block;
 }
 </style>
