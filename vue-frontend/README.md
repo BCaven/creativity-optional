@@ -1,29 +1,31 @@
 # creativity-optional-vue-frontend
 
-This template should help get you started developing with Vue 3 in Vite.
+## the goal:
 
-## Recommended IDE Setup
+the front end should have two main parts:
+1) node editor to control the scene (path: `/`)
+2) the actual output (path: '/output')
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur) + [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin).
+## the node editor:
 
-## Customize configuration
+look for things we can use as a drop in so I do not need to make a node editor from scratch
+it would be nice to have the option to display the scene behind the node editor and have it update in real(ish) time.
 
-See [Vite Configuration Reference](https://vitejs.dev/config/).
+## the actual output:
 
-## Project Setup
+should only really be accessed by end applications (wallpaper engine, etc) or by the server for Server-side rendering
 
+## storing and changing the dynamic scene:
+
+easy way: make it a json (or equivalent) and use some polymorphism so the scene can decode any node
+
+## Running the front end without a backend
+
+This is useful if for some reason you do not want to test with the backend.
 ```sh
+# from the `vue-frontend` folder...
+# install dependencies
 npm install
-```
-
-### Compile and Hot-Reload for Development
-
-```sh
+# run development server
 npm run dev
-```
-
-### Compile and Minify for Production
-
-```sh
-npm run build
 ```
