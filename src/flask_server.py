@@ -1,226 +1,171 @@
 """
-Server that runs in the docker container
+Server that is the base of the main application
 It serves the pre-built vue frontend
-
-NOTE: technically, the "client" application "serves" raw audio/data to this application
-
-
-Technical:
-audio is posted to ip/audio_in
-video should be available at ip/output and ip/output/stream
-
-
-might want to open a second port for the audio if we are *slow* because of the constant audio requests
-- this is not a concern at the moment
 
 Server: Flask
 
-Tasks:
-[TODO] support caching for general data
-[TODO] handle general data
-[TODO] make general data accessable to frontend via api calls for specific keys
-[TODO] add route to send available keys to frontend
-[TODO] clean up audio handling
-[TODO] deal with keep-alive connections
-[TODO] websockets
-
+Task:
+[In Progress] merge this with the local application so we do not need to have the unnecessary traffic between local application and the server
 """
-from flask import Flask, render_template, request, jsonify, abort
+from flask import Flask, render_template, request, jsonify
+from flask import before_render_template
 from flask_socketio import SocketIO, emit
+from flask_executor import Executor
 from werkzeug.serving import WSGIRequestHandler
-import numpy as np
 import logging
-
+import subprocess
+import shlex
+import sys
+from time import sleep
 
 flask_app = Flask(__name__, template_folder='.')
 flask_app.logger.setLevel(logging.DEBUG)
 socketio = SocketIO(flask_app)
+executor = Executor(flask_app)
 
-audio_str = ""
-audio_raw_max = 0
-AUDIO_SAVED_CHUNKS = 5
-audio_last = []
-audio_max_last = audio_raw_max
-# TODO: find a good way to store many past chunks (preferably both push and pop are o(1))
-audio_chunk = []
-# TODO: gracefully handle client settings
-change_settings = False
-client_audio_settings = dict()
-json_settings_path = 'node-settings.json'
+useShell = False
+running = True
+allow_http_commands = False
+command_file = 'commands.txt'
+command_dict = dict()
 
-# general data
-general_data = dict()
 
+def usage(return_val: int):
+    print("""
+please write this...
+
+""")
+    sys.exit(return_val)
+
+def parse_file(file: str) -> dict:
+    """
+    Read in commands from a file
+
+    One command per line, lines formatted like this:
+    [key] [sleep_period] [commands]...
+
+    NOTE: at the moment, it is assumed that you are ok with whatever command you have being executed here
+    The command is not checked for safety.
+
+    In the future we might need to clean this, but at the moment I think it is fine
+    """
+    command_dict = dict()
+    try:
+        with open(file, 'r') as cmd_file:
+            lines = cmd_file.readlines()
+            for line in lines:
+                cleaned = line.rstrip().split(' ')
+                assert len(cleaned) >= 3, f"malformed line: {line.rstrip()}"
+                key = cleaned.pop(0)
+                sleep_period = cleaned.pop(0)
+                try:
+                    sleep_period = int(sleep_period)
+                except ValueError:
+                    logging.error(f"sleep value: {sleep_period} could not be converted into an integer")
+                
+                # please make this better
+                if '|' not in cleaned:
+                    command = shlex.split(' '.join(cleaned))
+                else:
+                    command = [ ' '.join(cleaned) ]
+                command_dict[key] = (sleep_period, command)
+    except FileNotFoundError:
+        logging.error(f"invalid file {file}")
+        usage(1)
+    
+    return command_dict
+
+def process_command(command) -> str:
+    """
+    Run the given command and return the output
+
+    The program will split the command for you if necessary
+
+    TODO: test on windows
+    """
+    assert type(command) is list, f"command parser failed! - invalid command type {type(command)} only str and list are allowed"
+    if useShell:
+        logging.warning("Using shell=True opens program to shell injections")
+    flask_app.logger.info(f"Running command {command}")
+    result = subprocess.run(command, stdout=subprocess.PIPE, shell=useShell)
+    return result.stdout.decode('utf-8').rstrip()
+
+@executor.job
+def command_thread(key, sleep_period, command) -> bool:
+    """
+    Thread that processes a given command.
+
+    Calls the command, sends the output to the server, and sleeps for the specified time
+
+    Returns a boolean - true if the process was killed normally, false if the process ended
+    prematurely (e.g. if the server did not respond)
+
+    NOTE: the frontend is responsible for handling whatever is sent to it
+    """
+    global running
+    while running:
+        result = process_command(command)
+        jresult = {
+            key: result
+        }
+        flask_app.logger.info(f"Update: {key} ({sleep_period}) : {result}")
+        socketio.emit('incoming_data', jresult)
+        sleep(sleep_period)
+    return True
 
 @flask_app.route("/")
 def main_page():
+    """
+    The only thing that should ever be called by the end user
+    """
     return render_template('index.html')
 
-@flask_app.route("/audio_settings", methods = ['GET', 'POST'])
-def get_audio_settings():
+@flask_app.route("/commands", methods=['GET'])
+def see_commands():
     """
-    This might end up being obsolete, but adding the header for now
+    Get a list of all currently running commands
     """
-    global client_audio_settings
-    global change_settings
-    if request.method == "POST":
-        data = request.form
-        response = {}
-        flask_app.logger.info(f"received {data}")
-        if "settings" in data:
-            response['message'] = f"Updated: {','.join(token for token in data['settings'])}"
-            for token in data['settings']:
-                client_audio_settings[token] = data[token]
-            change_settings = True
-        else:
-            response['message'] = "Error: settings must be a dict in a 'settings' key"
-        return jsonify(response)
-    else:
-        return jsonify({"settings": client_audio_settings})
+    return jsonify(command_dict)
 
-
-@flask_app.route("/audio_in", methods=['GET', 'POST'])
-def audio_in():
+@flask_app.route("/commands/add", methods=['POST'])
+def add_command():
     """
-    HTTP implementation to send audio data to server
-    Keeping it for compatability
-    How the local application to the server.
-    It is also called by the frontend UI to test the dynamic site,
-    although this will might change in the future.
-    When compared to performance of minimal udp packets, there was only a difference of 0.01 seconds of latency (0.22 vs 0.21)
+    Add a command to the command dict and immediately start a job for the new command
 
+    NOTE: since this lets anyone on the network add commands, might want to check to make sure they are acceptable commands
 
-    TODO: change how setting changes are communicated back to the client
-    client is expecting 'settings' key that contains any updated settings
+    On the other hand, that is a pain so it might be simpler to let the user turn off this feature
     """
-    # TODO: change this later, it is just for testing and the MVP apparently
-    global audio_str
-    global audio_chunk
-    global audio_raw_max
-    global audio_last
-    global audio_max_last
-    global AUDIO_SAVED_CHUNKS
-    global change_settings
-    if request.method == 'POST':
-        data = request.json
-        audio_chunk = np.array(data['data']).reshape(-1)
-        rpeak = float(data['peak'])
-        ravg = float(data['avg'])
-        audio_raw_max = rpeak
-        # NOTE: all of this computation is better done in a celery task, but since those arent set up yet,
-        # doing basic analysis here
-        # NOTE: celery tasks may never be implemented because we no longer have a need for them (no librosa)
-        audio_last.append(rpeak)
-        if (len(audio_last) > AUDIO_SAVED_CHUNKS):
-            audio_last.pop(0)
-
-        audio_max_last = max(audio_last)
-        bars = "#" * int(50 * ravg)
-        mbars = "-" * int((50 * rpeak) - (50 * ravg))
-        audio_str = bars + mbars
-        response = {"bars": audio_str}
-        socketio.emit('audio_data', {"bars": audio_str, "peak": audio_max_last})
-
-        if change_settings:
-            response['setting_change'] = change_settings
-            change_settings = False
-        return jsonify(response)
-    else:
-        response = jsonify({"bars": audio_str, "peak": audio_max_last})
-        # TODO: the actual CORS policy
-        response.headers.add("Access-Control-Allow-Origin", "*")
-        return response
+    if not allow_http_commands:
+        flask_app.logger.info("A POST request was sent to /commands/add but was blocked")
+        return jsonify({'error': '/commands/add is turned off for this application'})
+    data = request.json
+    if not all(i in {'key', 'sleep_period', 'command'} for i in data):
+        flask_app.logger.warning(f"Malformed request to /commands/add: {data}")
+        return jsonify({'error': 'see creativity-optional wiki for information about /commands/add'})
+    
+    # TODO: parse the command so it is in the right format
+    command_dict[data['key']] = (data['sleep_period'], data['command'])
+    flask_app.logger.info(f"added command to be executed: {data['key']} ({data['sleep_period']}) : {data['command']}")
+    command_thread.submit(data['key'], data['sleep_period'], data['command'])
 
 @flask_app.route("/general_in", methods=['POST'])
 def general_in():
     """
     Recieve misc information of the form
     { 
-    key: data,
-    type: type(data)
+        key: data
     }
 
-    At the moment, only int is supported as a data type and
-    all data is assumed to be a range between 0 and 100
+    the server emits a 'incoming_data' message to all connected websockets when new data is added
+
+    NOTE: should probably keep this route open as a way for other things on the network to contribute data
     """
-    global general_data
     data = request.json
-    # TODO: I think types will be removed later, so when that happens this check can get removed too
-    if 'type' not in data:
-        flask_app.logger.warning("request to /general_in did not specify the data type")
-    for key in data:
-        if key == 'type':
-            continue
-        flask_app.logger.info(f"Updating general data: {key}: {data[key]}")
-        general_data[key] = data[key]
-        # send new data over to the front-end
-        socketio.emit('incoming_data', data)
-    response = {"message": f"received data for {key in data if key != 'type' else ''}"}
+    # just send the data to the frontend, no need to record it here
+    socketio.emit('incoming_data', data)
+    response = {"message": f"received data: {data}"}
     return jsonify(response)
-
-@flask_app.route("/general_keys", methods=['GET'])
-def general_keys():
-    """
-    Return a list of all known general_data keys
-    """
-    response = {"keys": [key for key in general_data]}
-    return jsonify(response)
-
-@flask_app.route("/general_keys/<string:key>", methods=['GET'])
-def get_key(key):
-    """
-    Return the data for a specific key
-
-    This route will be used by the front-end to pull each key when it has been updated
-    """
-    response = {}
-    if key in general_data:
-        response[key] = general_data[key]
-    else:
-        abort(404)
-    
-    return jsonify(response)
-
-@flask_app.route("/page_settings", methods=['GET'])
-def send_initial_settings():
-    """
-    Send the json settings file to the front-end
-
-    This should be called once on startup
-    """
-    response = {}
-    # load json
-    with open(json_settings_path, 'r') as f:
-        pass
-    # send json
-    return jsonify(response)
-
-    
-@flask_app.route("/fft_audio", methods=['GET'])
-def fft_audio():
-    """
-    Do a FFT and return the data
-    TODO: shift array to only capture useful frequency range
-    """
-    num_motors = 8
-    if len(audio_chunk) > 0:
-        #return audio_chunk.tolist()
-        fft = np.fft.fft(audio_chunk).real
-        chunk_size = fft.size / num_motors
-        avg_chunks = np.abs(np.average(fft.reshape(-1, int(chunk_size)), axis=1))
-        normalized_chunks = avg_chunks # / avg_chunks.size
-        return jsonify({"frequencies": normalized_chunks.tolist()})
-    else:
-        return jsonify({'frequencies': [0, 0, 0, 0, 0, 0, 0, 0]})
-
-
-@flask_app.route("/output", methods=['GET'])
-def output_page():
-    """
-    Display just the threejs scene.
-    This is how other programs get our output (as html)
-    """
-    return render_template("outputscene/outputscene.html")
 
 @flask_app.route("/output/stream", methods=['GET'])
 def output_stream():
@@ -237,6 +182,16 @@ def output_stream():
     """
     return jsonify({'error': 'not implemented, look at creativity-optional wiki'})
 
+@flask_app.route("/shutdown", methods=['GET'])
+def shutdown_server():
+    """
+    Tell the process threads to quit and shut the server down
+    """
+    global running
+    running = False
+    flask_app.logger.warning("/shutdown tells all of the execution threads to stop but does not actually stop the server")
+    return jsonify({'message': 'shutting down server'})
+
 @flask_app.errorhandler(404)
 def page_not_found(error):
     """
@@ -246,28 +201,48 @@ def page_not_found(error):
     return "page not found", 404
 
 # sockets!
-@socketio.on("message")
-def handle_message(data):
-    """
-    use a websocket to talk to the frontend
-    """
-    flask_app.logger.info(f"recieved {data}")
-
 @socketio.on('connect')
 def connect():
+    """
+    This gets called when something connects via websocket
+
+    This log message is just a formality since the server does not do anything when recieving messages, it just sends them
+    """
     flask_app.logger.info("Someone connected to the websocket!")
     emit('my response', {'data': 'Connected'})
 
+@socketio.on('disconnect')
+def disconnect():
+    """
+    Client disconnected, turn off execution threads
+    """
+    flask_app.logger.info("Socket disconnected, turning off threads")
+    global running
+    running = False
+
+def command_setup(sender, template, context, **extra):
+    """
+    Called when a new connection is made
+    """
+    sender.logger.debug('Rendering template "%s" with context %s',
+                        template.name or 'string template',
+                        context)
+    command_dict = parse_file(command_file)
+    sender.logger.info(f"Command dictionary: {command_dict}")
+    for name in command_dict:
+        sleep_period, command = command_dict[name]
+        sender.logger.info(f"Adding command: {name} ({sleep_period}) : {command}")
+        command_thread.submit(name, sleep_period, command)
     
+
+before_render_template.connect(command_setup, flask_app)
 
 if __name__ == "__main__":
     """
     Start the server
 
 
-    NOTE: this is a development server and will need to be changed when rolling out
-    using this for development only (although who knows, if you see this in the next release, plz submit
-    a pr to fix it :D)
+    NOTE: this is a development server, for now it is probably fine
     """
     WSGIRequestHandler.protocol_version = "HTTP/1.1"
     socketio.run(flask_app, allow_unsafe_werkzeug=True, host='0.0.0.0', port=8000)

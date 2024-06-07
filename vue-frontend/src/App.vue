@@ -4,10 +4,8 @@ Source for the front-end served by the flask server
 
 Tasks:
 [DONE] websocket connection
-[TODO] import initial node graph
-[TODO] support for general keys
-[TODO] rearrange the threejs scene
-[TODO] import models into the threejs scene
+[DONE] support for general keys
+[TODO] have a 'magic' scene that we always grab (and that the user is supposed to change)
 [TODO] typescript so future developers do not hate us
 */
 

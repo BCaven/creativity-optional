@@ -50,3 +50,6 @@ vue-frontend/.vscode/*
 *.sw?
 
 *.tsbuildinfo
+
+# user specific files
+commands.txt

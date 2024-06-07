@@ -7,3 +7,4 @@ zeroconf
 opencv-python
 flask-socketio
 celery[redis]
+flask-executor
