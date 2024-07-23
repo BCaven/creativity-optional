@@ -1,5 +1,0 @@
-soundcard
-numpy
-requests
-zeroconf
-pyaudio

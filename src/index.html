@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Creativity Optional</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link type="text/css" rel="stylesheet" href="main.css">
+	</head>
+
+	<body>
+
+		<div id="container"></div>
+
+		<script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+        }
+      }
+    </script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO" crossorigin="anonymous"></script>
+	<script type="module">
+		// establish the websocket connection
+		// TODO: maybe grab this from sonewhere else
+
+		console.log(location);
+
+		// do not need to specify the location because this page is getting served by the websocket server
+		const socket = io();
+
+		let server_data = new Map();		
+		// socket listeners
+		// we mostly just need to listen for new data - not partictularly concerned with sending information back at the moment
+		function handleIncomingData(data) {
+		//console.log("message from server: ", data);
+			for (const prop in data) {
+				server_data.set(prop, data[prop]);
+			}
+		}
+		socket.on("incoming_data", handleIncomingData);
+		socket.on("message", handleIncomingData);
+		socket.on("connect", () => console.log("websocket connected!"));
+		socket.on("disconnect", () => console.log("websocket disconnected"));
+
+
+		// threejs scene
+		/*
+		Plan:
+		Set up the scene (camera)
+		Import the models
+
+		animate and use data from the server_data map
+		*/
+		import * as THREE from 'three';
+
+		import Stats from 'three/addons/libs/stats.module.js';
+
+		import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+		import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+		import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+		import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+
+		const clock = new THREE.Clock();
+		const container = document.getElementById( 'container' );
+
+		const stats = new Stats();
+		container.appendChild( stats.dom );
+
+		const renderer = new THREE.WebGLRenderer( { antialias: true } );
+		renderer.setPixelRatio( window.devicePixelRatio );
+		renderer.setSize( window.innerWidth, window.innerHeight );
+		container.appendChild( renderer.domElement );
+
+		const pmremGenerator = new THREE.PMREMGenerator( renderer );
+
+		const scene = new THREE.Scene();
+		scene.background = new THREE.Color( 0xbfe3dd );
+		scene.environment = pmremGenerator.fromScene( new RoomEnvironment( renderer ), 0.04 ).texture;
+
+		const camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 1, 100 );
+		camera.position.set( 5, 2, 8 );
+
+		const controls = new OrbitControls( camera, renderer.domElement );
+		controls.target.set( 0, 0.5, 0 );
+		controls.update();
+		controls.enablePan = false;
+		controls.enableDamping = true;
+
+		// set up loading fuctions and loaders
+		const dracoLoader = new DRACOLoader();
+		dracoLoader.setDecoderPath( 'jsm/libs/draco/gltf/' );
+
+		const loader = new GLTFLoader();
+		loader.setDRACOLoader( dracoLoader );
+		function onLoad( gltf ) {
+			const model = gltf.scene;
+			model.position.set( 0, 0, 0 );
+			model.scale.set( 1, 1, 1 );
+			scene.add( model );
+
+			
+			//const mixer = new THREE.AnimationMixer( model );
+			//mixer.clipAction( gltf.animations[ 0 ] ).play();
+			
+			renderer.setAnimationLoop( animate );
+		}
+		function onError( error ) {
+			console.error( error );
+		}
+
+		// load in all of the models
+	    const main_structure = loader.load( '/models/gltf/main_structure.glb', onLoad, undefined, onError);
+
+		window.onresize = function () {
+
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+
+			renderer.setSize( window.innerWidth, window.innerHeight );
+
+		};
+
+
+		function animate() {
+
+			const delta = clock.getDelta();
+
+			//mixer.update( delta );
+
+			controls.update();
+
+			stats.update();
+
+			renderer.render( scene, camera );
+
+		}
+
+
+		</script>
+
+	</body>
+
+</html>

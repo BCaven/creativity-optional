@@ -18,7 +18,9 @@ import shlex
 import sys
 from time import sleep
 
-flask_app = Flask(__name__, template_folder='.')
+flask_app = Flask(__name__, 
+                  template_folder='.',
+                  static_url_path='')
 flask_app.logger.setLevel(logging.DEBUG)
 socketio = SocketIO(flask_app)
 executor = Executor(flask_app)
