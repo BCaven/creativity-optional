@@ -20,7 +20,8 @@ from time import sleep
 
 flask_app = Flask(__name__, 
                   template_folder='.',
-                  static_url_path='')
+                  static_url_path='',
+                  static_folder='src/static')
 flask_app.logger.setLevel(logging.DEBUG)
 socketio = SocketIO(flask_app)
 executor = Executor(flask_app)

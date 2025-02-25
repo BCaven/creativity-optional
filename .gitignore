@@ -42,3 +42,6 @@ coverage
 
 # user specific files
 commands.txt
+
+# blender backups
+*.blend1
